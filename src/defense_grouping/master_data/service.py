@@ -221,9 +221,12 @@ async def create_teacher(
     payload: TeacherCreate,
 ) -> TeacherRead:
     require_department_scope(principal, payload.department_id)
-    if await session.scalar(
-        select(Teacher.id).where(Teacher.employee_number == payload.employee_number.strip())
-    ) is not None:
+    if (
+        await session.scalar(
+            select(Teacher.id).where(Teacher.employee_number == payload.employee_number.strip())
+        )
+        is not None
+    ):
         raise APIError(
             status_code=409,
             code="teacher_number_exists",
@@ -242,7 +245,10 @@ async def create_teacher(
     session.add(teacher)
     await session.flush()
     session.add_all(
-        [TeacherDirection(teacher_id=teacher.id, direction_id=item) for item in payload.direction_ids]
+        [
+            TeacherDirection(teacher_id=teacher.id, direction_id=item)
+            for item in payload.direction_ids
+        ]
     )
     await session.commit()
     return await teacher_read(session, teacher)
@@ -287,9 +293,12 @@ async def create_student(
     payload: StudentCreate,
 ) -> StudentRead:
     require_department_scope(principal, payload.department_id)
-    if await session.scalar(
-        select(Student.id).where(Student.student_number == payload.student_number.strip())
-    ) is not None:
+    if (
+        await session.scalar(
+            select(Student.id).where(Student.student_number == payload.student_number.strip())
+        )
+        is not None
+    ):
         raise APIError(
             status_code=409,
             code="student_number_exists",
@@ -322,7 +331,10 @@ async def create_student(
     session.add(student)
     await session.flush()
     session.add_all(
-        [StudentDirection(student_id=student.id, direction_id=item) for item in payload.direction_ids]
+        [
+            StudentDirection(student_id=student.id, direction_id=item)
+            for item in payload.direction_ids
+        ]
     )
     await session.commit()
     return await student_read(session, student)
@@ -529,7 +541,9 @@ async def write_rules(
     existing = await session.scalar(
         select(ActivityRuleSet.id).where(ActivityRuleSet.activity_id == activity_id)
     )
-    next_version = activity.current_rule_version if existing is None else activity.current_rule_version + 1
+    next_version = (
+        activity.current_rule_version if existing is None else activity.current_rule_version + 1
+    )
     activity.current_rule_version = next_version
     activity.version += 1
     rules = ActivityRuleSet(
@@ -546,9 +560,7 @@ async def write_rules(
         update(SchedulePlan)
         .where(
             SchedulePlan.activity_id == activity_id,
-            SchedulePlan.status.in_(
-                (PlanStatus.DRAFT, PlanStatus.VALIDATING, PlanStatus.READY)
-            ),
+            SchedulePlan.status.in_((PlanStatus.DRAFT, PlanStatus.VALIDATING, PlanStatus.READY)),
         )
         .values(
             status=PlanStatus.DRAFT,
@@ -567,9 +579,11 @@ async def set_activity_rooms(
     payload: ActivityRoomsWrite,
 ) -> list[RoomRead]:
     activity = await get_activity_scoped(session, principal, activity_id)
-    rooms = list(
-        await session.scalars(select(Room).where(Room.id.in_(payload.room_ids)))
-    ) if payload.room_ids else []
+    rooms = (
+        list(await session.scalars(select(Room).where(Room.id.in_(payload.room_ids))))
+        if payload.room_ids
+        else []
+    )
     if len(rooms) != len(payload.room_ids) or any(
         room.department_id != activity.department_id for room in rooms
     ):
@@ -651,18 +665,26 @@ class ActivityService:
             )
         person_ids = [student.id for student in students] + [teacher.id for teacher in teachers]
         occupancies = (
-            await self.session.scalars(
-                select(CourseOccupancy).where(CourseOccupancy.person_id.in_(person_ids))
-            )
-        ).all() if person_ids else []
-        leaves = (
-            await self.session.scalars(
-                select(LeaveRecord).where(
-                    LeaveRecord.person_id.in_(person_ids),
-                    LeaveRecord.status == LeaveStatus.APPROVED,
+            (
+                await self.session.scalars(
+                    select(CourseOccupancy).where(CourseOccupancy.person_id.in_(person_ids))
                 )
-            )
-        ).all() if person_ids else []
+            ).all()
+            if person_ids
+            else []
+        )
+        leaves = (
+            (
+                await self.session.scalars(
+                    select(LeaveRecord).where(
+                        LeaveRecord.person_id.in_(person_ids),
+                        LeaveRecord.status == LeaveStatus.APPROVED,
+                    )
+                )
+            ).all()
+            if person_ids
+            else []
+        )
         return ActivitySnapshot(
             activity_id=str(activity.id),
             department_id=str(activity.department_id),
@@ -692,10 +714,7 @@ class ActivityService:
                 }
                 for item in slots
             ),
-            rooms=tuple(
-                {"id": str(item.id), "capacity": item.capacity}
-                for item in rooms
-            ),
+            rooms=tuple({"id": str(item.id), "capacity": item.capacity} for item in rooms),
             rules=rules_read(rules).model_dump(mode="json"),
             occupancies=tuple(
                 {

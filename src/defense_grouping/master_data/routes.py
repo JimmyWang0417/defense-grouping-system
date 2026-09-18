@@ -101,10 +101,10 @@ async def fetch_page(
     page: int,
     page_size: int,
 ) -> tuple[list[Any], int]:
-    total = await session.scalar(select(func.count()).select_from(statement.order_by(None).subquery()))
-    rows = list(
-        await session.scalars(statement.offset((page - 1) * page_size).limit(page_size))
+    total = await session.scalar(
+        select(func.count()).select_from(statement.order_by(None).subquery())
     )
+    rows = list(await session.scalars(statement.offset((page - 1) * page_size).limit(page_size)))
     return rows, int(total or 0)
 
 
@@ -136,9 +136,13 @@ async def departments(
         statement = statement.where(Department.id.in_(scope))
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(or_(Department.code.ilike(pattern), Department.name.ilike(pattern)))
+        statement = statement.where(
+            or_(Department.code.ilike(pattern), Department.name.ilike(pattern))
+        )
     order = Department.name if sort == "name" else Department.code
-    rows, total = await fetch_page(session, statement.order_by(order, Department.id), page, page_size)
+    rows, total = await fetch_page(
+        session, statement.order_by(order, Department.id), page, page_size
+    )
     return Page[DepartmentRead](
         items=[DepartmentRead.model_validate(row) for row in rows],
         page=page,
@@ -148,7 +152,9 @@ async def departments(
 
 
 @router.post("/departments", response_model=DepartmentRead, status_code=201)
-async def add_department(payload: DepartmentCreate, _principal: SystemAdmin, session: Session) -> DepartmentRead:
+async def add_department(
+    payload: DepartmentCreate, _principal: SystemAdmin, session: Session
+) -> DepartmentRead:
     if await session.scalar(select(Department.id).where(Department.code == payload.code.strip())):
         raise APIError(status_code=409, code="department_code_exists", message="院系代码已存在")
     department = Department(code=payload.code.strip(), name=payload.name.strip(), is_active=True)
@@ -176,7 +182,9 @@ async def edit_department(
 
 
 @router.delete("/departments/{department_id}", status_code=204)
-async def remove_department(department_id: UUID, _principal: SystemAdmin, session: Session) -> Response:
+async def remove_department(
+    department_id: UUID, _principal: SystemAdmin, session: Session
+) -> Response:
     department = await session.get(Department, department_id)
     if department is None:
         raise APIError(status_code=404, code="department_not_found", message="院系不存在")
@@ -211,7 +219,9 @@ async def majors(
 
 
 @router.post("/majors", response_model=MajorRead, status_code=201)
-async def add_major(payload: DepartmentChildCreate, principal: ScopedAdmin, session: Session) -> MajorRead:
+async def add_major(
+    payload: DepartmentChildCreate, principal: ScopedAdmin, session: Session
+) -> MajorRead:
     return await create_major(session, principal, payload)
 
 
@@ -259,9 +269,13 @@ async def directions(
         statement = statement.where(Direction.department_id.in_(scope))
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(or_(Direction.code.ilike(pattern), Direction.name.ilike(pattern)))
+        statement = statement.where(
+            or_(Direction.code.ilike(pattern), Direction.name.ilike(pattern))
+        )
     order = Direction.name if sort == "name" else Direction.code
-    rows, total = await fetch_page(session, statement.order_by(order, Direction.id), page, page_size)
+    rows, total = await fetch_page(
+        session, statement.order_by(order, Direction.id), page, page_size
+    )
     return Page[DirectionRead](
         items=[DirectionRead.model_validate(row) for row in rows],
         page=page,
@@ -299,7 +313,9 @@ async def edit_direction(
 
 
 @router.delete("/directions/{direction_id}", status_code=204)
-async def remove_direction(direction_id: UUID, principal: ScopedAdmin, session: Session) -> Response:
+async def remove_direction(
+    direction_id: UUID, principal: ScopedAdmin, session: Session
+) -> Response:
     direction = await session.get(Direction, direction_id)
     if direction is None:
         raise APIError(status_code=404, code="direction_not_found", message="专业方向不存在")
@@ -329,7 +345,9 @@ async def teachers(
 
 
 @router.post("/teachers", response_model=TeacherRead, status_code=201)
-async def add_teacher(payload: TeacherCreate, principal: ScopedAdmin, session: Session) -> TeacherRead:
+async def add_teacher(
+    payload: TeacherCreate, principal: ScopedAdmin, session: Session
+) -> TeacherRead:
     return await create_teacher(session, principal, payload)
 
 
@@ -391,7 +409,9 @@ async def students(
         statement = statement.where(Student.department_id.in_(scope))
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(or_(Student.student_number.ilike(pattern), Student.name.ilike(pattern)))
+        statement = statement.where(
+            or_(Student.student_number.ilike(pattern), Student.name.ilike(pattern))
+        )
     order = Student.name if sort == "name" else Student.student_number
     rows, total = await fetch_page(session, statement.order_by(order, Student.id), page, page_size)
     return Page[StudentRead](
@@ -403,7 +423,9 @@ async def students(
 
 
 @router.post("/students", response_model=StudentRead, status_code=201)
-async def add_student(payload: StudentCreate, principal: ScopedAdmin, session: Session) -> StudentRead:
+async def add_student(
+    payload: StudentCreate, principal: ScopedAdmin, session: Session
+) -> StudentRead:
     return await create_student(session, principal, payload)
 
 
@@ -422,12 +444,18 @@ async def edit_student(
     if payload.major_id is not None:
         major = await session.get(Major, payload.major_id)
         if major is None or major.department_id != student.department_id:
-            raise APIError(status_code=422, code="major_department_mismatch", message="专业不属于学生院系")
+            raise APIError(
+                status_code=422, code="major_department_mismatch", message="专业不属于学生院系"
+            )
     if payload.advisor_id is not None:
         advisor = await session.get(Teacher, payload.advisor_id)
         if advisor is None or advisor.department_id != student.department_id:
-            raise APIError(status_code=422, code="advisor_department_mismatch", message="导师不属于学生院系")
-    for name, value in payload.model_dump(exclude_unset=True, exclude={"version", "direction_ids"}).items():
+            raise APIError(
+                status_code=422, code="advisor_department_mismatch", message="导师不属于学生院系"
+            )
+    for name, value in payload.model_dump(
+        exclude_unset=True, exclude={"version", "direction_ids"}
+    ).items():
         setattr(student, name, value)
     if payload.direction_ids is not None:
         await validate_directions(session, student.department_id, payload.direction_ids)
@@ -472,9 +500,13 @@ async def terms(
         statement = statement.where(AcademicTerm.department_id.in_(scope))
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(or_(AcademicTerm.code.ilike(pattern), AcademicTerm.name.ilike(pattern)))
+        statement = statement.where(
+            or_(AcademicTerm.code.ilike(pattern), AcademicTerm.name.ilike(pattern))
+        )
     order = AcademicTerm.name if sort == "name" else AcademicTerm.code
-    rows, total = await fetch_page(session, statement.order_by(order, AcademicTerm.id), page, page_size)
+    rows, total = await fetch_page(
+        session, statement.order_by(order, AcademicTerm.id), page, page_size
+    )
     return Page[AcademicTermRead](
         items=[AcademicTermRead.model_validate(row) for row in rows],
         page=page,
@@ -484,7 +516,9 @@ async def terms(
 
 
 @router.post("/terms", response_model=AcademicTermRead, status_code=201)
-async def add_term(payload: AcademicTermCreate, principal: ScopedAdmin, session: Session) -> AcademicTermRead:
+async def add_term(
+    payload: AcademicTermCreate, principal: ScopedAdmin, session: Session
+) -> AcademicTermRead:
     require_department_scope(principal, payload.department_id)
     if await session.scalar(
         select(AcademicTerm.id).where(
@@ -515,7 +549,9 @@ async def edit_term(
     start_date = values.get("start_date", term.start_date)
     end_date = values.get("end_date", term.end_date)
     if end_date < start_date:
-        raise APIError(status_code=422, code="invalid_term_dates", message="学期结束日期不能早于开始日期")
+        raise APIError(
+            status_code=422, code="invalid_term_dates", message="学期结束日期不能早于开始日期"
+        )
     for name, value in values.items():
         setattr(term, name, value)
     term.version += 1
@@ -619,7 +655,9 @@ async def edit_occupancy(
 
 
 @router.delete("/occupancies/{occupancy_id}", status_code=204)
-async def remove_occupancy(occupancy_id: UUID, principal: ScopedAdmin, session: Session) -> Response:
+async def remove_occupancy(
+    occupancy_id: UUID, principal: ScopedAdmin, session: Session
+) -> Response:
     occupancy = await session.get(CourseOccupancy, occupancy_id)
     if occupancy is None:
         raise APIError(status_code=404, code="occupancy_not_found", message="课程占用不存在")
@@ -694,7 +732,9 @@ async def edit_leave(
     end = normalized_utc(payload.ends_at) if payload.ends_at else as_utc(leave.ends_at)
     if end <= start:
         raise APIError(status_code=422, code="invalid_interval", message="结束时间必须晚于开始时间")
-    for name, value in payload.model_dump(exclude_unset=True, exclude={"version", "starts_at", "ends_at"}).items():
+    for name, value in payload.model_dump(
+        exclude_unset=True, exclude={"version", "starts_at", "ends_at"}
+    ).items():
         setattr(leave, name, value)
     leave.starts_at = start
     leave.ends_at = end
@@ -818,7 +858,9 @@ async def activities(
 
 
 @router.post("/activities", response_model=ActivityRead, status_code=201)
-async def add_activity(payload: ActivityCreate, principal: ScopedAdmin, session: Session) -> ActivityRead:
+async def add_activity(
+    payload: ActivityCreate, principal: ScopedAdmin, session: Session
+) -> ActivityRead:
     return await create_activity(session, principal, payload)
 
 
@@ -936,7 +978,9 @@ async def remove_slot(
 
 
 @router.get("/activities/{activity_id}/rules", response_model=ActivityRulesRead)
-async def read_rules(activity_id: UUID, principal: ScopedAdmin, session: Session) -> ActivityRulesRead:
+async def read_rules(
+    activity_id: UUID, principal: ScopedAdmin, session: Session
+) -> ActivityRulesRead:
     activity = await get_activity_scoped(session, principal, activity_id)
     row = await session.scalar(
         select(ActivityRuleSet).where(

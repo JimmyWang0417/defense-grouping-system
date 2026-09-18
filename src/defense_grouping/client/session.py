@@ -3,9 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-import keyring
-from keyring.errors import PasswordDeleteError
-
 
 class RefreshTokenStore(Protocol):
     """Small synchronous boundary implemented by desktop and Web stores."""
@@ -54,12 +51,19 @@ class DesktopKeyringTokenStore:
         self._account_name = account_name
 
     def get(self) -> str | None:
+        import keyring
+
         return keyring.get_password(self._service_name, self._account_name)
 
     def set(self, token: str) -> None:
+        import keyring
+
         keyring.set_password(self._service_name, self._account_name, token)
 
     def clear(self) -> None:
+        import keyring
+        from keyring.errors import PasswordDeleteError
+
         try:
             keyring.delete_password(self._service_name, self._account_name)
         except PasswordDeleteError:
@@ -106,9 +110,7 @@ class SessionState:
         raw_departments = payload.get("department_ids")
         if not isinstance(raw_user_id, str) or not isinstance(raw_username, str):
             raise TypeError("当前用户响应缺少身份字段")
-        if not isinstance(raw_roles, list) or not all(
-            isinstance(role, str) for role in raw_roles
-        ):
+        if not isinstance(raw_roles, list) or not all(isinstance(role, str) for role in raw_roles):
             raise TypeError("当前用户响应包含无效角色")
         if not isinstance(raw_departments, list) or not all(
             isinstance(department, str) for department in raw_departments

@@ -133,9 +133,7 @@ class ClientApplication:
 
     def _login(self) -> ft.Control:
         if self.session.authenticated:
-            destination = (
-                "/change-password" if self.session.must_change_password else "/dashboard"
-            )
+            destination = "/change-password" if self.session.must_change_password else "/dashboard"
             self.page.navigate(destination)
             return ft.ProgressRing()
         return login_view(self.page, self.client, self.session, self.render)
@@ -214,9 +212,7 @@ async def main(page: ft.Page) -> None:
         )
         return
     token_store = (
-        FletSessionTokenStore(page.session.store)
-        if page.web
-        else DesktopKeyringTokenStore()
+        FletSessionTokenStore(page.session.store) if page.web else DesktopKeyringTokenStore()
     )
     client = ApiClient(api_url, token_store=token_store)
     session = await client.bootstrap()

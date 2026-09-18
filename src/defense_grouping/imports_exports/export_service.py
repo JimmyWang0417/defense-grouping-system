@@ -48,9 +48,7 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
         {
             slot.id: slot
             for slot in await session.scalars(
-                select(DefenseSlot).where(
-                    DefenseSlot.id.in_(group.slot_id for group in groups)
-                )
+                select(DefenseSlot).where(DefenseSlot.id.in_(group.slot_id for group in groups))
             )
         }
         if groups
@@ -60,9 +58,7 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
         {
             room.id: room
             for room in await session.scalars(
-                select(Room).where(
-                    Room.id.in_(group.room_id for group in groups)
-                )
+                select(Room).where(Room.id.in_(group.room_id for group in groups))
             )
         }
         if groups
@@ -91,9 +87,7 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
     students = (
         {
             student.id: student
-            for student in await session.scalars(
-                select(Student).where(Student.id.in_(student_ids))
-            )
+            for student in await session.scalars(select(Student).where(Student.id.in_(student_ids)))
         }
         if student_ids
         else {}
@@ -101,9 +95,7 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
     teachers = (
         {
             teacher.id: teacher
-            for teacher in await session.scalars(
-                select(Teacher).where(Teacher.id.in_(teacher_ids))
-            )
+            for teacher in await session.scalars(select(Teacher).where(Teacher.id.in_(teacher_ids)))
         }
         if teacher_ids
         else {}
@@ -111,9 +103,7 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
     students_by_group: dict[UUID, list[StudentAssignment]] = {}
     panels_by_group: dict[UUID, list[PanelAssignment]] = {}
     for student_assignment in student_assignments:
-        students_by_group.setdefault(student_assignment.group_id, []).append(
-            student_assignment
-        )
+        students_by_group.setdefault(student_assignment.group_id, []).append(student_assignment)
     for panel_assignment in panel_assignments:
         panels_by_group.setdefault(panel_assignment.group_id, []).append(panel_assignment)
 
@@ -138,7 +128,9 @@ async def export_plan_workbook(session: AsyncSession, plan: SchedulePlan) -> byt
                 teachers[chair.teacher_id].name if chair else "",
                 "、".join(
                     teachers[item.teacher_id].name
-                    for item in sorted(panels, key=lambda value: teachers[value.teacher_id].employee_number)
+                    for item in sorted(
+                        panels, key=lambda value: teachers[value.teacher_id].employee_number
+                    )
                 ),
                 "、".join(
                     f"{students[item.student_id].student_number} {students[item.student_id].name}"

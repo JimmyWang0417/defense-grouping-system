@@ -26,7 +26,10 @@ class DataTableState:
             row
             for row in self.rows
             if not query
-            or any(query in str(row.get(field_name, "")).casefold() for field_name in self.search_fields)
+            or any(
+                query in str(row.get(field_name, "")).casefold()
+                for field_name in self.search_fields
+            )
         ]
         rows = [
             row

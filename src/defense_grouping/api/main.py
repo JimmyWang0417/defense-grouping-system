@@ -117,11 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/health")
     async def health() -> dict[str, str]:
-        database = (
-            "sqlite"
-            if active_settings.database_url.startswith("sqlite")
-            else "postgresql"
-        )
+        database = "sqlite" if active_settings.database_url.startswith("sqlite") else "postgresql"
         return {"status": "ok", "database": database}
 
     app.include_router(auth_router)

@@ -17,9 +17,7 @@ class Department(UUIDTimestampMixin, VersionMixin, Base):
 
 class Major(UUIDTimestampMixin, VersionMixin, Base):
     __tablename__ = "majors"
-    __table_args__ = (
-        UniqueConstraint("department_id", "code", name="uq_majors_department_code"),
-    )
+    __table_args__ = (UniqueConstraint("department_id", "code", name="uq_majors_department_code"),)
 
     department_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),

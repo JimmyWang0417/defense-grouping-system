@@ -87,7 +87,9 @@ async def request_exception(
     if payload.expires_at.tzinfo is None:
         raise APIError(status_code=422, code="timezone_required", message="例外有效期必须包含时区")
     if payload.expires_at.astimezone(UTC) <= datetime.now(UTC):
-        raise APIError(status_code=422, code="exception_expired", message="例外有效期必须晚于当前时间")
+        raise APIError(
+            status_code=422, code="exception_expired", message="例外有效期必须晚于当前时间"
+        )
     await _validate_subjects(session, payload, activity.department_id)
     exception = ConstraintException(
         activity_id=payload.activity_id,
@@ -151,7 +153,9 @@ async def decide_exception(
     if decision not in {ApprovalStatus.APPROVED, ApprovalStatus.REJECTED}:
         raise ValueError("decision must be approved or rejected")
     if exception.status != ApprovalStatus.PENDING:
-        raise APIError(status_code=409, code="invalid_exception_transition", message="例外申请已经处理")
+        raise APIError(
+            status_code=409, code="invalid_exception_transition", message="例外申请已经处理"
+        )
     if exception.requester_id == principal.user_id:
         raise APIError(
             status_code=403,
@@ -162,7 +166,9 @@ async def decide_exception(
     if activity is None:
         raise APIError(status_code=404, code="activity_not_found", message="答辩活动不存在")
     if not await _can_approve(session, principal, activity.department_id):
-        raise APIError(status_code=403, code="approval_forbidden", message="当前账号没有例外审批权限")
+        raise APIError(
+            status_code=403, code="approval_forbidden", message="当前账号没有例外审批权限"
+        )
     if decision == ApprovalStatus.APPROVED and as_utc(exception.expires_at) <= datetime.now(UTC):
         raise APIError(status_code=409, code="exception_expired", message="已过期例外不能批准")
     exception.status = decision
@@ -190,7 +196,9 @@ async def revoke_exception(
     request_id: str,
 ) -> ConstraintException:
     if exception.status != ApprovalStatus.APPROVED:
-        raise APIError(status_code=409, code="invalid_exception_transition", message="只有已批准例外可撤销")
+        raise APIError(
+            status_code=409, code="invalid_exception_transition", message="只有已批准例外可撤销"
+        )
     exception.status = ApprovalStatus.REVOKED
     exception.revoked_at = datetime.now(UTC)
     exception.version += 1

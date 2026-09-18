@@ -21,9 +21,7 @@ async def test_copy_adjust_compare_and_optimistic_lock(master_harness, configure
 
     group = draft["groups"][0]
     other_room = next(
-        str(room_id)
-        for room_id in configured_schedule.room_ids
-        if str(room_id) != group["room_id"]
+        str(room_id) for room_id in configured_schedule.room_ids if str(room_id) != group["room_id"]
     )
     conflict = await master_harness.client.patch(
         f"/api/v1/plans/{draft['id']}/groups/{group['id']}",
@@ -66,7 +64,10 @@ async def test_publish_is_immutable_and_teacher_confirmation_is_isolated(
     immutable = await master_harness.client.patch(
         f"/api/v1/plans/{ready['id']}/groups/{group['id']}",
         headers=headers,
-        json={"room_id": str(configured_schedule.room_ids[0]), "version": published.json()["version"]},
+        json={
+            "room_id": str(configured_schedule.room_ids[0]),
+            "version": published.json()["version"],
+        },
     )
     assert immutable.status_code == 409
     assert immutable.json()["error"]["code"] == "published_plan_immutable"
@@ -92,7 +93,9 @@ async def test_publish_is_immutable_and_teacher_confirmation_is_isolated(
 
 
 @pytest.mark.asyncio
-async def test_second_publication_archives_previous_plan(master_harness, configured_schedule) -> None:
+async def test_second_publication_archives_previous_plan(
+    master_harness, configured_schedule
+) -> None:
     headers, first = await create_ready_plan(master_harness, configured_schedule)
     first_publish = await master_harness.client.post(
         f"/api/v1/plans/{first['id']}/publish",

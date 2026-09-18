@@ -13,7 +13,9 @@ async def wait_for_job(client, headers, job_id: str, *, timeout: float = 15) -> 
     raise AssertionError(f"schedule job {job_id} did not finish within {timeout} seconds")
 
 
-async def create_ready_plan(master_harness, configured_schedule) -> tuple[dict[str, str], dict[str, object]]:
+async def create_ready_plan(
+    master_harness, configured_schedule
+) -> tuple[dict[str, str], dict[str, object]]:
     headers = await master_harness.headers()
     response = await master_harness.client.post(
         f"/api/v1/activities/{configured_schedule.activity_id}/schedule-jobs",

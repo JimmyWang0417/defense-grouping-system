@@ -167,9 +167,7 @@ async def rotate_refresh_token(
 
 async def logout(session: AsyncSession, raw_token: str) -> None:
     record = await session.scalar(
-        select(RefreshToken).where(
-            RefreshToken.token_digest == refresh_token_digest(raw_token)
-        )
+        select(RefreshToken).where(RefreshToken.token_digest == refresh_token_digest(raw_token))
     )
     if record is not None and record.revoked_at is None:
         record.revoked_at = datetime.now(UTC)

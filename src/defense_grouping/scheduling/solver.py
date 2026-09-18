@@ -219,9 +219,7 @@ def _build_model(
     rooms = sorted(data.rooms, key=lambda item: item.id)
     group_count = data.required_group_count
 
-    families = {
-        name: model.new_bool_var(f"family_{name}") for name in sorted(_FAMILY_DIAGNOSTICS)
-    }
+    families = {name: model.new_bool_var(f"family_{name}") for name in sorted(_FAMILY_DIAGNOSTICS)}
     assumption_families: dict[int, str] = {}
     for name, literal in families.items():
         model.add_assumption(literal)
@@ -242,16 +240,12 @@ def _build_model(
         for group_index in range(group_count)
     }
     group_slot = {
-        (group_index, slot_index): model.new_bool_var(
-            f"group_{group_index}_slot_{slot_index}"
-        )
+        (group_index, slot_index): model.new_bool_var(f"group_{group_index}_slot_{slot_index}")
         for group_index in range(group_count)
         for slot_index in range(len(slots))
     }
     group_room = {
-        (group_index, room_index): model.new_bool_var(
-            f"group_{group_index}_room_{room_index}"
-        )
+        (group_index, room_index): model.new_bool_var(f"group_{group_index}_room_{room_index}")
         for group_index in range(group_count)
         for room_index in range(len(rooms))
     }
@@ -262,6 +256,34 @@ def _build_model(
         for teacher_index in range(len(teachers))
         for group_index in range(group_count)
     }
+
+    # Defense groups are unlabeled. Ordering their unique (slot, room) resource
+    # pair removes equivalent permutations without excluding any real schedule.
+    resource_choices: list[cp_model.IntVar] = []
+    for group_index in range(group_count):
+        slot_choice = model.new_int_var(0, len(slots) - 1, f"group_{group_index}_slot_choice")
+        room_choice = model.new_int_var(0, len(rooms) - 1, f"group_{group_index}_room_choice")
+        model.add(
+            slot_choice
+            == sum(
+                slot_index * group_slot[group_index, slot_index] for slot_index in range(len(slots))
+            )
+        )
+        model.add(
+            room_choice
+            == sum(
+                room_index * group_room[group_index, room_index] for room_index in range(len(rooms))
+            )
+        )
+        resource_choice = model.new_int_var(
+            0,
+            len(slots) * len(rooms) - 1,
+            f"group_{group_index}_resource_choice",
+        )
+        model.add(resource_choice == slot_choice * len(rooms) + room_choice)
+        resource_choices.append(resource_choice)
+    for group_index in range(group_count - 1):
+        model.add(resource_choices[group_index] < resource_choices[group_index + 1])
 
     for student_index in range(len(students)):
         model.add_exactly_one(
@@ -277,9 +299,7 @@ def _build_model(
             f"group_{group_index}_student_load",
         )
         group_loads.append(group_load)
-        model.add(group_load <= data.rules.students_per_group).only_enforce_if(
-            families["capacity"]
-        )
+        model.add(group_load <= data.rules.students_per_group).only_enforce_if(families["capacity"])
         model.add(
             sum(teacher_group[teacher_index, group_index] for teacher_index in range(len(teachers)))
             == data.rules.teachers_per_group
@@ -435,9 +455,7 @@ def _build_model(
             load * len(teachers) - total_panel_assignments,
         )
         deviations.append(deviation)
-    teacher_load_balance_upper = (
-        max(1, len(teachers)) * max(1, group_count) * max(1, len(teachers))
-    )
+    teacher_load_balance_upper = max(1, len(teachers)) * max(1, group_count) * max(1, len(teachers))
     teacher_load_balance = _sum_var(
         model,
         deviations,
@@ -665,9 +683,7 @@ def solve(
         outcome = SolveOutcome(
             status="infeasible",
             solution=None,
-            diagnostics=_deduplicate_diagnostics(
-                (*invalid_diagnostics, *precheck_diagnostics)
-            ),
+            diagnostics=_deduplicate_diagnostics((*invalid_diagnostics, *precheck_diagnostics)),
             elapsed_seconds=time.perf_counter() - started,
         )
         _emit_final_progress(on_progress, outcome)
@@ -675,12 +691,25 @@ def solve(
 
     model, variables, objective, assumption_families = _build_model(data)
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = time_limit_seconds
+    remaining_seconds = max(0.0, time_limit_seconds - (time.perf_counter() - started))
+    if remaining_seconds == 0:
+        outcome = SolveOutcome(
+            "timeout",
+            None,
+            _deduplicate_diagnostics(
+                (
+                    *precheck_diagnostics,
+                    Diagnostic("solver_timeout", "建模达到时间上限，未启动搜索"),
+                )
+            ),
+            time.perf_counter() - started,
+        )
+        _emit_final_progress(on_progress, outcome)
+        return outcome
+    solver.parameters.max_time_in_seconds = remaining_seconds
     solver.parameters.random_seed = data.seed
     solver.parameters.num_search_workers = 1
-    progress_callback = (
-        _SolutionProgress(started, on_progress) if on_progress is not None else None
-    )
+    progress_callback = _SolutionProgress(started, on_progress) if on_progress is not None else None
     status = solver.solve(model, progress_callback)
     elapsed = time.perf_counter() - started
 
@@ -713,9 +742,7 @@ def solve(
             core_status = core_solver.solve(model)
             if core_status == cp_model.INFEASIBLE:
                 core_diagnostics = _core_diagnostics(core_solver, assumption_families)
-        diagnostics = _deduplicate_diagnostics(
-            (*precheck_diagnostics, *core_diagnostics)
-        )
+        diagnostics = _deduplicate_diagnostics((*precheck_diagnostics, *core_diagnostics))
         if not diagnostics:
             diagnostics = (Diagnostic("infeasible", "当前输入与规则不存在可行方案"),)
         outcome = SolveOutcome(

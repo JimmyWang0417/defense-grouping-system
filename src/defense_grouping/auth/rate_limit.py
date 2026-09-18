@@ -56,7 +56,9 @@ class LoginRateLimiter:
         return f"{username.strip().casefold()}|{client_ip}"
 
     def retry_after(self, username: str, client_ip: str) -> int | None:
-        return self.store.retry_after(self.key(username, client_ip), self.clock(), self.limit, self.window)
+        return self.store.retry_after(
+            self.key(username, client_ip), self.clock(), self.limit, self.window
+        )
 
     def record_failure(self, username: str, client_ip: str) -> None:
         self.store.record_failure(self.key(username, client_ip), self.clock(), self.window)

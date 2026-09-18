@@ -282,12 +282,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def not_found(request: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(
             status_code=404,
-            content={"error": {"code": "not_found", "message": "资源不存在", "request_id": request.state.request_id, "fields": {}}},
+            content={
+                "error": {
+                    "code": "not_found",
+                    "message": "资源不存在",
+                    "request_id": request.state.request_id,
+                    "fields": {},
+                }
+            },
         )
 
     @app.get("/api/v1/health")
     async def health() -> dict[str, str]:
-        engine_name = "sqlite" if active_settings.database_url.startswith("sqlite") else "postgresql"
+        engine_name = (
+            "sqlite" if active_settings.database_url.startswith("sqlite") else "postgresql"
+        )
         return {"status": "ok", "database": engine_name}
 
     return app
@@ -354,12 +363,31 @@ def test_initial_migration_creates_required_tables(tmp_path: Path):
     command.upgrade(config, "head")
     tables = set(inspect(create_engine(f"sqlite:///{database}")).get_table_names())
     assert {
-        "users", "role_assignments", "departments", "majors", "directions",
-        "teachers", "students", "academic_terms", "course_occupancies",
-        "leave_records", "rooms", "defense_activities", "defense_slots",
-        "activity_rooms", "activity_rule_sets", "schedule_jobs", "schedule_plans", "defense_groups",
-        "panel_assignments", "student_assignments", "constraint_exceptions",
-        "teacher_confirmations", "import_batches", "audit_logs", "refresh_tokens",
+        "users",
+        "role_assignments",
+        "departments",
+        "majors",
+        "directions",
+        "teachers",
+        "students",
+        "academic_terms",
+        "course_occupancies",
+        "leave_records",
+        "rooms",
+        "defense_activities",
+        "defense_slots",
+        "activity_rooms",
+        "activity_rule_sets",
+        "schedule_jobs",
+        "schedule_plans",
+        "defense_groups",
+        "panel_assignments",
+        "student_assignments",
+        "constraint_exceptions",
+        "teacher_confirmations",
+        "import_batches",
+        "audit_logs",
+        "refresh_tokens",
     } <= tables
 ```
 
@@ -386,8 +414,14 @@ class Base(DeclarativeBase):
 
 class UUIDTimestampMixin:
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class VersionMixin:
@@ -541,7 +575,11 @@ def verify_password(password: str, encoded: str) -> bool:
 
 def create_access_token(subject: str, secret: str, minutes: int) -> str:
     now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": subject, "iat": now, "exp": now + timedelta(minutes=minutes)}, secret, algorithm="HS256")
+    return jwt.encode(
+        {"sub": subject, "iat": now, "exp": now + timedelta(minutes=minutes)},
+        secret,
+        algorithm="HS256",
+    )
 
 
 def new_refresh_token() -> tuple[str, str]:
@@ -621,7 +659,9 @@ that a repeated bootstrap does not reset the administrator password.
 - [x] **Step 1: Write cross-entity and scope tests**
 
 ```python
-def test_student_advisor_must_belong_to_activity_department(admin_client, department, other_teacher):
+def test_student_advisor_must_belong_to_activity_department(
+    admin_client, department, other_teacher
+):
     response = admin_client.post(
         "/api/v1/students",
         json={
@@ -760,7 +800,13 @@ integration suite reports 22 passed, with Ruff and strict mypy also passing.
 def test_student_preflight_reports_exact_cell(admin_client, student_workbook_with_bad_advisor):
     created = admin_client.post(
         "/api/v1/imports/student/preflight",
-        files={"file": ("学生信息.xlsx", student_workbook_with_bad_advisor, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={
+            "file": (
+                "学生信息.xlsx",
+                student_workbook_with_bad_advisor,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
     )
     assert created.status_code == 202
     preview = wait_for_import(admin_client, created.json()["id"])
@@ -773,7 +819,9 @@ def test_student_preflight_reports_exact_cell(admin_client, student_workbook_wit
 
 def test_confirm_rolls_back_every_row_when_write_fails(admin_client, valid_preview, count_students):
     before = count_students()
-    admin_client.app.dependency_overrides[get_import_writer] = lambda: FailingImportWriter(fail_on_row=2)
+    admin_client.app.dependency_overrides[get_import_writer] = lambda: FailingImportWriter(
+        fail_on_row=2
+    )
     response = admin_client.post(f"/api/v1/imports/{valid_preview.id}/confirm")
     assert response.status_code == 500
     assert count_students() == before
@@ -982,7 +1030,11 @@ def test_solver_returns_reproducible_valid_solution(feasible_input):
 def test_solver_never_uses_unapproved_advisor_exception(feasible_input):
     outcome = solve(feasible_input, time_limit_seconds=5)
     for group in outcome.solution.groups:
-        advisors = {student.advisor_id for student in feasible_input.students if student.id in group.student_ids}
+        advisors = {
+            student.advisor_id
+            for student in feasible_input.students
+            if student.id in group.student_ids
+        }
         assert advisors.isdisjoint(group.teacher_ids)
 ```
 
@@ -1187,7 +1239,9 @@ Use this command contract:
 ```python
 class ExceptionRequest(BaseModel):
     activity_id: UUID
-    constraint_code: Literal["advisor_conflict", "course_conflict", "leave_conflict", "workload_limit"]
+    constraint_code: Literal[
+        "advisor_conflict", "course_conflict", "leave_conflict", "workload_limit"
+    ]
     subject_type: Literal["teacher_student", "person_slot", "teacher"]
     teacher_id: UUID | None = None
     student_id: UUID | None = None
@@ -1253,8 +1307,12 @@ git commit -m "feat: add approvals auditing exports and recovery"
 
 ```python
 def test_client_package_does_not_import_database_modules():
-    source = Path("src/defense_grouping/client").read_text() if Path("src/defense_grouping/client").is_file() else "\n".join(
-        path.read_text() for path in Path("src/defense_grouping/client").rglob("*.py")
+    source = (
+        Path("src/defense_grouping/client").read_text()
+        if Path("src/defense_grouping/client").is_file()
+        else "\n".join(
+            path.read_text() for path in Path("src/defense_grouping/client").rglob("*.py")
+        )
     )
     assert "defense_grouping.db" not in source
     assert "defense_grouping.models" not in source
@@ -1278,7 +1336,9 @@ from typing import Any
 
 
 class ApiError(Exception):
-    def __init__(self, code: str, message: str, request_id: str, fields: dict[str, str] | None = None):
+    def __init__(
+        self, code: str, message: str, request_id: str, fields: dict[str, str] | None = None
+    ):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -1298,7 +1358,9 @@ class ApiClient:
         response = await self._client.request(method, path, headers=headers, **kwargs)
         if response.status_code >= 400:
             payload = response.json()["error"]
-            raise ApiError(payload["code"], payload["message"], payload["request_id"], payload.get("fields"))
+            raise ApiError(
+                payload["code"], payload["message"], payload["request_id"], payload.get("fields")
+            )
         return response.json()
 ```
 
@@ -1370,7 +1432,9 @@ git commit -m "feat: add secure role-aware Flet application shell"
 async def test_admin_can_import_schedule_publish_and_teacher_confirm(app_harness):
     await app_harness.login("academic-admin", "Admin Password 2026")
     await app_harness.import_fixture_bundle("tests/fixtures/demo/valid")
-    activity_id = await app_harness.create_activity_from_fixture("tests/fixtures/demo/activity.json")
+    activity_id = await app_harness.create_activity_from_fixture(
+        "tests/fixtures/demo/activity.json"
+    )
     job = await app_harness.start_schedule(activity_id, seed=20260918)
     await app_harness.wait_until_job_succeeds(job.id)
     plan = await app_harness.open_job_plan(job.id)
@@ -1449,7 +1513,7 @@ git commit -m "feat: complete Flet academic scheduling workflows"
 - Produces a versioned, idempotently applicable `main` ruleset and automatic GitHub Release flow.
 - Produces exact local startup, desktop build, server migration, and recovery instructions.
 
-- [ ] **Step 1: Write the performance acceptance test**
+- [x] **Step 1: Write the performance acceptance test**
 
 ```python
 def run_solver_fixture(performance_input, output):
@@ -1480,15 +1544,15 @@ def test_department_scale_solver_finishes_within_budget(performance_input):
     assert validate_solution(performance_input, outcome.solution).valid
 ```
 
-- [ ] **Step 2: Build deterministic synthetic data**
+- [x] **Step 2: Build deterministic synthetic data**
 
 Generate exactly 500 students, 50 teachers, 20 groups, 8 slots, and 24 rooms. Guarantee feasibility by constructing hidden valid assignments first, then derive availability, advisors, directions, and capacities from them. Shuffle visible input with seed `20260918`; do not feed hidden assignments to the solver.
 
-- [ ] **Step 3: Verify PostgreSQL migrations and core flow**
+- [x] **Step 3: Verify PostgreSQL migrations and core flow**
 
 Using `testcontainers.postgres.PostgresContainer`, run Alembic to head and execute login, master-data creation, import, activity creation, one small solve, publication, and export. Assert no SQLite-only SQL or type behavior is used.
 
-- [ ] **Step 4: Write repository-governance tests and verify failure**
+- [x] **Step 4: Write repository-governance tests and verify failure**
 
 Test the governance files as one contract:
 
@@ -1512,11 +1576,11 @@ Run: `uv run pytest tests/repository/test_github_governance.py -q`
 
 Expected: FAIL because workflows, ruleset, release configuration, and configuration script are absent.
 
-- [ ] **Step 5: Add PR CI and nightly performance jobs**
+- [x] **Step 5: Add PR CI and nightly performance jobs**
 
 Configure Linux CI for `pull_request`, `push` to `main`, `merge_group`, and `workflow_dispatch`. Use least-privilege `contents: read`, concurrency cancellation, dependency caching, and full-SHA-pinned third-party Actions. Run `uv sync --locked`, `ruff format --check`, Ruff, mypy, unit tests and SQLite integration tests on Python 3.12 and 3.14, PostgreSQL integration tests, client tests, and `flet build web --yes`. End with an unconditional `PR Gate` aggregation job that fails unless every required dependency succeeded. Run the 500-student performance test in a separate workflow manually and nightly, not on every pull request.
 
-- [ ] **Step 6: Add versioned main-branch rules and automatic releases**
+- [x] **Step 6: Add versioned main-branch rules and automatic releases**
 
 Declare `.github/rulesets/main.json` with active enforcement for `~DEFAULT_BRANCH`, no bypass actors, deletion and non-fast-forward protection, required Pull Requests, resolved review conversations, zero mandatory approvals for the solo-owner repository, squash/rebase merge methods, and a strict required `PR Gate` status check.
 
@@ -1528,7 +1592,7 @@ Run: `uv run pytest tests/repository/test_github_governance.py -q`
 
 Expected: all governance contract, dry-run, idempotency, precondition, permission, pinning, and release-asset tests pass.
 
-- [ ] **Step 7: Write exact operating guides**
+- [x] **Step 7: Write exact operating guides**
 
 Document:
 
@@ -1544,7 +1608,7 @@ uv run flet build web
 
 The server guide must include PostgreSQL URL format, Alembic migration, reverse-proxy HTTPS, CORS allowlist, task-executor replacement boundary, backup schedule, and rollback procedure. State that desktop artifacts must be built on each target OS because Flet/PyInstaller is not a cross-compiler. The repository-governance guide must explain the `RELEASE_PLEASE_TOKEN` permissions, first successful `PR Gate`, dry-run/apply ruleset sequence, rule recovery, Conventional Commits release behavior, and GitHub API verification commands.
 
-- [ ] **Step 8: Run the full completion audit**
+- [x] **Step 8: Run the full completion audit**
 
 Run:
 
@@ -1562,12 +1626,21 @@ git status --short
 
 Expected: all checks pass, the performance budget is met, the Web build succeeds, ruleset dry-run reports the exact intended remote change (or no drift after application), and only intentional files are modified. Because this implementation session does not push, create a Pull Request, or deploy, run `--apply` only after the workflow commit is present on GitHub and `PR Gate` has succeeded there.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add .github .release-please-manifest.json release-please-config.json scripts/configure_github_rules.py README.md docs/operations tests/performance tests/integration/test_postgres.py tests/repository
 git commit -m "ci: enforce pull request and release governance"
 ```
+
+**Progress (2026-09-18):** Added the deterministic department-scale fixture and bounded
+process-level memory/time acceptance test; measured 23.48 seconds wall time, 21.90 seconds
+solver time, and 719.8 MiB peak RSS. PostgreSQL 17 passed Alembic plus login, master data,
+transactional import, solve, publish, and export. Added full-SHA-pinned CI, nightly performance,
+guarded release-please automation, an idempotent ruleset CLI, and five operating guides. The
+full local suite passed with 90 tests plus the separately enabled PostgreSQL test; Alembic had
+no drift and the Flet Web release build completed successfully. Remote push, first `PR Gate`,
+ruleset apply, and API readback are performed after this commit per the owner request.
 
 ---
 

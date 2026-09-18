@@ -212,7 +212,9 @@ async def validate_student_row(
         split_directions(row.values.get("专业方向")),
     )
     if missing:
-        issues.append(issue(row, "专业方向", "direction_not_found", f"专业方向不存在：{'、'.join(missing)}"))
+        issues.append(
+            issue(row, "专业方向", "direction_not_found", f"专业方向不存在：{'、'.join(missing)}")
+        )
     if issues or major is None or advisor is None:
         return None, issues, False
     number = str(row.values["学号"]).strip()
@@ -249,7 +251,9 @@ async def validate_teacher_row(
         split_directions(row.values.get("专业方向")),
     )
     if missing:
-        issues.append(issue(row, "专业方向", "direction_not_found", f"专业方向不存在：{'、'.join(missing)}"))
+        issues.append(
+            issue(row, "专业方向", "direction_not_found", f"专业方向不存在：{'、'.join(missing)}")
+        )
     try:
         workload_limit = int(row.values["工作量上限"])
         if workload_limit < 1:
@@ -284,7 +288,11 @@ async def course_interval(
 ) -> tuple[datetime, datetime]:
     start_section = int(row.values["开始节次"])
     end_section = int(row.values["结束节次"])
-    if start_section not in SECTION_TIMES or end_section not in SECTION_TIMES or end_section < start_section:
+    if (
+        start_section not in SECTION_TIMES
+        or end_section not in SECTION_TIMES
+        or end_section < start_section
+    ):
         raise ValueError("invalid section interval")
     raw_date = row.values["日期或教学周"]
     try:
@@ -320,7 +328,11 @@ async def validate_course_row(
         return None, issues, False
     person_type = parse_person_type(row.values["人员类型"])
     if person_type is None:
-        return None, [issue(row, "人员类型", "invalid_person_type", "人员类型必须为教师或学生")], False
+        return (
+            None,
+            [issue(row, "人员类型", "invalid_person_type", "人员类型必须为教师或学生")],
+            False,
+        )
     number = str(row.values["人员编号"]).strip()
     person_id = await resolve_person(session, person_type, number, batch.department_id)
     if person_id is None:
@@ -328,7 +340,9 @@ async def validate_course_row(
     try:
         starts_at, ends_at = await course_interval(session, batch, row)
     except (TypeError, ValueError):
-        issues.append(issue(row, "日期或教学周", "invalid_course_interval", "课程日期、教学周或节次无效"))
+        issues.append(
+            issue(row, "日期或教学周", "invalid_course_interval", "课程日期、教学周或节次无效")
+        )
         starts_at = ends_at = datetime.now(UTC)
     if issues:
         return None, issues, False
@@ -363,7 +377,11 @@ async def validate_leave_row(
         return None, issues, False
     person_type = parse_person_type(row.values["人员类型"])
     if person_type is None:
-        return None, [issue(row, "人员类型", "invalid_person_type", "人员类型必须为教师或学生")], False
+        return (
+            None,
+            [issue(row, "人员类型", "invalid_person_type", "人员类型必须为教师或学生")],
+            False,
+        )
     number = str(row.values["人员编号"]).strip()
     person_id = await resolve_person(session, person_type, number, batch.department_id)
     if person_id is None:
@@ -378,7 +396,9 @@ async def validate_leave_row(
         starts_at = ends_at = datetime.now(UTC)
     if issues:
         return None, issues, False
-    fingerprint = interval_fingerprint(person_type, person_id, starts_at, ends_at, row.values["原因"])
+    fingerprint = interval_fingerprint(
+        person_type, person_id, starts_at, ends_at, row.values["原因"]
+    )
     existing = await session.scalar(
         select(LeaveRecord.id).where(
             LeaveRecord.department_id == batch.department_id,
@@ -463,8 +483,13 @@ async def validate_room_row(
         issues.append(issue(row, "容量", "invalid_capacity", "容量必须为正整数"))
         capacity = 1
     availability = str(row.values.get("可用日期时段") or "").strip()
-    if availability and re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}-\d{2}:\d{2}", availability) is None:
-        issues.append(issue(row, "可用日期时段", "invalid_room_interval", "格式应为 YYYY-MM-DD HH:MM-HH:MM"))
+    if (
+        availability
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}-\d{2}:\d{2}", availability) is None
+    ):
+        issues.append(
+            issue(row, "可用日期时段", "invalid_room_interval", "格式应为 YYYY-MM-DD HH:MM-HH:MM")
+        )
     if issues:
         return None, issues, False
     campus = str(row.values["校区"]).strip()

@@ -60,9 +60,7 @@ async def get_auth_context(
             headers={"WWW-Authenticate": "Bearer"},
         )
     assignments = (
-        await session.scalars(
-            select(RoleAssignment).where(RoleAssignment.user_id == user.id)
-        )
+        await session.scalars(select(RoleAssignment).where(RoleAssignment.user_id == user.id))
     ).all()
     principal = Principal(
         user_id=user.id,

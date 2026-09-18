@@ -18,15 +18,11 @@ def dashboard_view(session: SessionState) -> ft.Control:
             ft.ResponsiveRow(
                 controls=[
                     ft.Card(
-                        content=ft.Container(
-                            content=ft.Text("待处理任务将在此显示"), padding=20
-                        ),
+                        content=ft.Container(content=ft.Text("待处理任务将在此显示"), padding=20),
                         col={"xs": 12, "md": 6, "lg": 4},
                     ),
                     ft.Card(
-                        content=ft.Container(
-                            content=ft.Text("近期答辩活动将在此显示"), padding=20
-                        ),
+                        content=ft.Container(content=ft.Text("近期答辩活动将在此显示"), padding=20),
                         col={"xs": 12, "md": 6, "lg": 4},
                     ),
                 ]

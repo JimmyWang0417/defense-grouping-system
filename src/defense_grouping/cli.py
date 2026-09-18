@@ -164,9 +164,7 @@ def seed_demo(
             async with database.engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
             async with database.session() as session:
-                existing = await session.scalar(
-                    select(Department).where(Department.code == "DEMO")
-                )
+                existing = await session.scalar(select(Department).where(Department.code == "DEMO"))
                 if existing is not None:
                     return False
                 department = Department(code="DEMO", name="演示学院", is_active=True)

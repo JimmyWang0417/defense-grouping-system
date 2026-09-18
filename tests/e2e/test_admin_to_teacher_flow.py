@@ -52,9 +52,7 @@ async def test_admin_can_schedule_publish_and_teacher_confirm(
         schedule = await teacher_portal.list()
         assert len(schedule) == 1
         assert schedule[0]["plan_id"] == plan["id"]
-        confirmation = await teacher_portal.confirm(
-            str(schedule[0]["panel_assignment_id"])
-        )
+        confirmation = await teacher_portal.confirm(str(schedule[0]["panel_assignment_id"]))
         assert confirmation["status"] == "confirmed"
     finally:
         await api.close()

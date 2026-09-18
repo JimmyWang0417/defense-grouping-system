@@ -44,7 +44,10 @@ async def test_six_templates_have_locked_headers(master_harness) -> None:
     expected = {
         "student": ("学生信息", STUDENT_HEADERS),
         "teacher": ("教师信息", ["工号", "姓名", "院系", "职称", "专业方向", "工作量上限"]),
-        "course": ("课程占用", ["人员编号", "人员类型", "日期或教学周", "星期", "开始节次", "结束节次"]),
+        "course": (
+            "课程占用",
+            ["人员编号", "人员类型", "日期或教学周", "星期", "开始节次", "结束节次"],
+        ),
         "leave": ("请假记录", ["人员编号", "人员类型", "开始时间", "结束时间", "原因"]),
         "slot": ("答辩时段", ["活动", "日期", "开始时间", "结束时间", "最大组数"]),
         "room": ("教室信息", ["校区", "楼宇", "教室", "容量", "可用日期时段"]),
@@ -139,7 +142,13 @@ async def create_valid_student_preview(master_harness, headers):
     created = await master_harness.client.post(
         "/api/v1/imports/student/preflight",
         headers=headers,
-        files={"file": ("学生信息.xlsx", content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={
+            "file": (
+                "学生信息.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
     )
     assert created.status_code == 202
     preview = await wait_for_import(master_harness, created.json()["id"])
@@ -197,7 +206,13 @@ async def test_confirm_is_transactional_and_repeated_import_is_idempotent(master
     repeated = await master_harness.client.post(
         "/api/v1/imports/student/preflight",
         headers=headers,
-        files={"file": ("学生信息.xlsx", content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={
+            "file": (
+                "学生信息.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
     )
     second = await wait_for_import(master_harness, repeated.json()["id"])
     assert second["updates"] == 1
@@ -277,7 +292,13 @@ async def test_preflight_rejects_duplicate_rows_wrong_department_and_macros(mast
     created = await master_harness.client.post(
         "/api/v1/imports/student/preflight",
         headers=headers,
-        files={"file": ("学生信息.xlsx", duplicate, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={
+            "file": (
+                "学生信息.xlsx",
+                duplicate,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
     )
     preview = await wait_for_import(master_harness, created.json()["id"])
     assert any(item["code"] == "duplicate_row" for item in preview["issues"])
@@ -290,7 +311,13 @@ async def test_preflight_rejects_duplicate_rows_wrong_department_and_macros(mast
     created = await master_harness.client.post(
         "/api/v1/imports/teacher/preflight",
         headers=headers,
-        files={"file": ("教师信息.xlsx", wrong_department, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={
+            "file": (
+                "教师信息.xlsx",
+                wrong_department,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
     )
     preview = await wait_for_import(master_harness, created.json()["id"])
     assert any(item["code"] == "department_mismatch" for item in preview["issues"])
@@ -298,10 +325,13 @@ async def test_preflight_rejects_duplicate_rows_wrong_department_and_macros(mast
     macro = await master_harness.client.post(
         "/api/v1/imports/student/preflight",
         headers=headers,
-        files={"file": ("学生信息.xlsm", duplicate, "application/vnd.ms-excel.sheet.macroEnabled.12")},
+        files={
+            "file": ("学生信息.xlsm", duplicate, "application/vnd.ms-excel.sheet.macroEnabled.12")
+        },
     )
     assert macro.status_code == 422
     assert macro.json()["error"]["code"] == "invalid_workbook_type"
+
 
 @pytest.mark.asyncio
 async def test_confirm_rejects_file_changed_after_preview(master_harness) -> None:

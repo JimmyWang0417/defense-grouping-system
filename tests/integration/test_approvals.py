@@ -80,7 +80,9 @@ async def test_approve_reject_revoke_and_scope(master_harness, configured_schedu
 
 
 @pytest.mark.asyncio
-async def test_expired_and_broad_exceptions_are_rejected(master_harness, configured_schedule) -> None:
+async def test_expired_and_broad_exceptions_are_rejected(
+    master_harness, configured_schedule
+) -> None:
     headers = await master_harness.headers()
     expired = await master_harness.client.post(
         "/api/v1/exceptions",

@@ -27,7 +27,15 @@ TEMPLATES: dict[ImportKind, TemplateDefinition] = {
         "学生信息",
         ("学号", "姓名", "院系", "专业", "年级", "专业方向", "导师工号"),
         ("S2026001", "李明", "软件学院", "软件工程", "2022", "人工智能", "T001"),
-        ("唯一学号", "姓名", "院系全称", "专业全称", "入学年级", "多个方向用顿号分隔", "导师唯一工号"),
+        (
+            "唯一学号",
+            "姓名",
+            "院系全称",
+            "专业全称",
+            "入学年级",
+            "多个方向用顿号分隔",
+            "导师唯一工号",
+        ),
         frozenset({"学号", "导师工号"}),
     ),
     ImportKind.TEACHER: TemplateDefinition(
@@ -127,7 +135,9 @@ def parse_workbook(path: Path, kind: ImportKind) -> ParseResult:
     if definition.sheet_name not in workbook.sheetnames:
         return ParseResult((), ((1, "", "wrong_sheet", f"缺少工作表：{definition.sheet_name}"),))
     if unknown_sheets:
-        errors.append((1, "", "unknown_sheet", f"存在未知工作表：{'、'.join(sorted(unknown_sheets))}"))
+        errors.append(
+            (1, "", "unknown_sheet", f"存在未知工作表：{'、'.join(sorted(unknown_sheets))}")
+        )
     sheet = workbook[definition.sheet_name]
     headers = tuple(cell.value for cell in sheet[1])
     if headers != definition.headers:
@@ -146,7 +156,9 @@ def parse_workbook(path: Path, kind: ImportKind) -> ParseResult:
         values: dict[str, Any] = {}
         for header, cell in zip(definition.headers, cells, strict=True):
             if header in definition.identity_fields and cell.data_type == "f":
-                errors.append((row_number, header, "formula_not_allowed", "业务编号字段不能使用公式"))
+                errors.append(
+                    (row_number, header, "formula_not_allowed", "业务编号字段不能使用公式")
+                )
             value = cell.value
             values[header] = value.strip() if isinstance(value, str) else value
         rows.append(ParsedRow(definition.sheet_name, row_number, values))

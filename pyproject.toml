@@ -21,6 +21,14 @@ dependencies = [
   "typer>=0.16,<1",
 ]
 
+# Flet's browser packager reads this supported dependency table before PEP 621.
+# Keep the Pyodide payload client-only; the installable project still uses the
+# complete runtime dependency list above.
+[tool.poetry.dependencies]
+python = ">=3.12,<3.15"
+flet = ">=1,<2"
+httpx = ">=0.28,<1"
+
 [dependency-groups]
 dev = [
   "hypothesis>=6.138,<7",
@@ -48,6 +56,10 @@ packages = ["src/defense_grouping"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+  "performance: department-scale tests with explicit time and memory budgets",
+  "postgres: PostgreSQL compatibility tests requiring a Docker daemon",
+]
 
 [tool.ruff]
 line-length = 100

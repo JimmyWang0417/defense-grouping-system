@@ -31,8 +31,7 @@ def run_prechecks(data: SchedulingInput) -> tuple[Diagnostic, ...]:
         room_capacities = room_by_slot[slot.id][: max(0, slot.max_groups)]
         total_group_positions += len(room_capacities)
         total_student_capacity += sum(
-            min(data.rules.students_per_group, room_capacity)
-            for room_capacity in room_capacities
+            min(data.rules.students_per_group, room_capacity) for room_capacity in room_capacities
         )
     if total_group_positions < required_groups or total_student_capacity < len(data.students):
         diagnostics.append(

@@ -170,7 +170,9 @@ async def build_scheduling_input(
         )
     )
     if rules is None:
-        raise APIError(status_code=409, code="activity_rules_missing", message="答辩活动尚未配置规则")
+        raise APIError(
+            status_code=409, code="activity_rules_missing", message="答辩活动尚未配置规则"
+        )
 
     students = list(
         await session.scalars(
@@ -228,19 +230,27 @@ async def build_scheduling_input(
             teacher_directions[teacher_id].add(str(direction_id))
 
     person_ids = [student.id for student in students] + [teacher.id for teacher in teachers]
-    occupancies = list(
-        await session.scalars(
-            select(CourseOccupancy).where(CourseOccupancy.person_id.in_(person_ids))
-        )
-    ) if person_ids else []
-    leaves = list(
-        await session.scalars(
-            select(LeaveRecord).where(
-                LeaveRecord.person_id.in_(person_ids),
-                LeaveRecord.status == LeaveStatus.APPROVED,
+    occupancies = (
+        list(
+            await session.scalars(
+                select(CourseOccupancy).where(CourseOccupancy.person_id.in_(person_ids))
             )
         )
-    ) if person_ids else []
+        if person_ids
+        else []
+    )
+    leaves = (
+        list(
+            await session.scalars(
+                select(LeaveRecord).where(
+                    LeaveRecord.person_id.in_(person_ids),
+                    LeaveRecord.status == LeaveStatus.APPROVED,
+                )
+            )
+        )
+        if person_ids
+        else []
+    )
     blocks_by_person: dict[UUID, list[tuple[str, datetime, datetime]]] = defaultdict(list)
     for occupancy in occupancies:
         blocks_by_person[occupancy.person_id].append(
@@ -267,13 +277,17 @@ async def build_scheduling_input(
                 available.add(str(slot.id))
         return frozenset(available)
 
-    room_availabilities = list(
-        await session.scalars(
-            select(RoomAvailability).where(
-                RoomAvailability.room_id.in_(room.id for room in rooms)
+    room_availabilities = (
+        list(
+            await session.scalars(
+                select(RoomAvailability).where(
+                    RoomAvailability.room_id.in_(room.id for room in rooms)
+                )
             )
         )
-    ) if rooms else []
+        if rooms
+        else []
+    )
     availability_by_room: dict[UUID, list[RoomAvailability]] = defaultdict(list)
     for availability in room_availabilities:
         availability_by_room[availability.room_id].append(availability)
@@ -468,14 +482,17 @@ async def persist_solve_outcome(
     if not report.valid:
         codes = ", ".join(item.code for item in report.violations)
         raise RuntimeError(f"solver result failed persistence validation: {codes}")
-    version_number = int(
-        await session.scalar(
-            select(func.coalesce(func.max(SchedulePlan.version_number), 0)).where(
-                SchedulePlan.activity_id == job.activity_id
+    version_number = (
+        int(
+            await session.scalar(
+                select(func.coalesce(func.max(SchedulePlan.version_number), 0)).where(
+                    SchedulePlan.activity_id == job.activity_id
+                )
             )
+            or 0
         )
-        or 0
-    ) + 1
+        + 1
+    )
     plan = SchedulePlan(
         activity_id=job.activity_id,
         version_number=version_number,
@@ -543,14 +560,10 @@ async def plan_solution(session: AsyncSession, plan: SchedulePlan) -> ScheduleSo
         )
     )
     students = list(
-        await session.scalars(
-            select(StudentAssignment).where(StudentAssignment.plan_id == plan.id)
-        )
+        await session.scalars(select(StudentAssignment).where(StudentAssignment.plan_id == plan.id))
     )
     panels = list(
-        await session.scalars(
-            select(PanelAssignment).where(PanelAssignment.plan_id == plan.id)
-        )
+        await session.scalars(select(PanelAssignment).where(PanelAssignment.plan_id == plan.id))
     )
     students_by_group: dict[UUID, list[str]] = defaultdict(list)
     teachers_by_group: dict[UUID, list[str]] = defaultdict(list)
@@ -625,14 +638,17 @@ async def copy_plan(
     source: SchedulePlan,
     principal: Principal,
 ) -> SchedulePlan:
-    next_version = int(
-        await session.scalar(
-            select(func.coalesce(func.max(SchedulePlan.version_number), 0)).where(
-                SchedulePlan.activity_id == source.activity_id
+    next_version = (
+        int(
+            await session.scalar(
+                select(func.coalesce(func.max(SchedulePlan.version_number), 0)).where(
+                    SchedulePlan.activity_id == source.activity_id
+                )
             )
+            or 0
         )
-        or 0
-    ) + 1
+        + 1
+    )
     copied = SchedulePlan(
         activity_id=source.activity_id,
         version_number=next_version,
@@ -658,9 +674,7 @@ async def copy_plan(
         )
     )
     panels = list(
-        await session.scalars(
-            select(PanelAssignment).where(PanelAssignment.plan_id == source.id)
-        )
+        await session.scalars(select(PanelAssignment).where(PanelAssignment.plan_id == source.id))
     )
     students_by_group: dict[UUID, list[StudentAssignment]] = defaultdict(list)
     panels_by_group: dict[UUID, list[PanelAssignment]] = defaultdict(list)
@@ -744,9 +758,7 @@ async def adjust_group(
             ]
         )
     if payload.teacher_ids is not None:
-        await session.execute(
-            delete(PanelAssignment).where(PanelAssignment.group_id == group.id)
-        )
+        await session.execute(delete(PanelAssignment).where(PanelAssignment.group_id == group.id))
         chair_id = payload.chair_id
         if chair_id is None:
             raise APIError(
@@ -794,7 +806,9 @@ async def adjust_group(
 
 async def validate_plan(session: AsyncSession, plan: SchedulePlan) -> SchedulePlan:
     if plan.status not in {PlanStatus.DRAFT, PlanStatus.READY}:
-        raise APIError(status_code=409, code="invalid_plan_transition", message="当前方案状态不可复检")
+        raise APIError(
+            status_code=409, code="invalid_plan_transition", message="当前方案状态不可复检"
+        )
     plan.status = PlanStatus.VALIDATING
     await session.flush()
     data = await build_scheduling_input(
@@ -825,7 +839,9 @@ async def publish_plan(
     request_id: str,
 ) -> SchedulePlan:
     if plan.status != PlanStatus.READY:
-        raise APIError(status_code=409, code="invalid_plan_transition", message="只有已复检方案可发布")
+        raise APIError(
+            status_code=409, code="invalid_plan_transition", message="只有已复检方案可发布"
+        )
     data = await build_scheduling_input(
         session,
         plan.activity_id,
@@ -853,17 +869,19 @@ async def publish_plan(
     plan.exception_snapshot = _exception_snapshot(data, report.used_exception_ids)
     plan.version += 1
     panels = list(
-        await session.scalars(
-            select(PanelAssignment).where(PanelAssignment.plan_id == plan.id)
-        )
+        await session.scalars(select(PanelAssignment).where(PanelAssignment.plan_id == plan.id))
     )
-    existing_confirmation_ids = set(
-        await session.scalars(
-            select(TeacherConfirmation.panel_assignment_id).where(
-                TeacherConfirmation.panel_assignment_id.in_(item.id for item in panels)
+    existing_confirmation_ids = (
+        set(
+            await session.scalars(
+                select(TeacherConfirmation.panel_assignment_id).where(
+                    TeacherConfirmation.panel_assignment_id.in_(item.id for item in panels)
+                )
             )
         )
-    ) if panels else set()
+        if panels
+        else set()
+    )
     session.add_all(
         [
             TeacherConfirmation(panel_assignment_id=item.id)
@@ -892,7 +910,9 @@ async def archive_plan(
     request_id: str,
 ) -> SchedulePlan:
     if plan.status != PlanStatus.PUBLISHED:
-        raise APIError(status_code=409, code="invalid_plan_transition", message="只有已发布方案可撤回")
+        raise APIError(
+            status_code=409, code="invalid_plan_transition", message="只有已发布方案可撤回"
+        )
     plan.status = PlanStatus.ARCHIVED
     plan.version += 1
     await write_audit(
@@ -915,7 +935,9 @@ async def compare_plans(
     right: SchedulePlan,
 ) -> PlanComparison:
     if left.activity_id != right.activity_id:
-        raise APIError(status_code=409, code="plan_activity_mismatch", message="只能比较同一活动的方案")
+        raise APIError(
+            status_code=409, code="plan_activity_mismatch", message="只能比较同一活动的方案"
+        )
     left_read = await plan_read(session, left)
     right_read = await plan_read(session, right)
     left_groups = {item.code: item for item in left_read.groups}
@@ -946,12 +968,21 @@ async def compare_plans(
             teacher_changes.append(
                 {
                     "group_code": code,
-                    "added": [str(item) for item in sorted(right_teachers - left_teachers, key=str)],
-                    "removed": [str(item) for item in sorted(left_teachers - right_teachers, key=str)],
+                    "added": [
+                        str(item) for item in sorted(right_teachers - left_teachers, key=str)
+                    ],
+                    "removed": [
+                        str(item) for item in sorted(left_teachers - right_teachers, key=str)
+                    ],
                 }
             )
-        if left_group is None or right_group is None or (
-            left_group.slot_id != right_group.slot_id or left_group.room_id != right_group.room_id
+        if (
+            left_group is None
+            or right_group is None
+            or (
+                left_group.slot_id != right_group.slot_id
+                or left_group.room_id != right_group.room_id
+            )
         ):
             resource_changes.append(
                 {

@@ -280,9 +280,7 @@ async def configured_schedule(master_harness: MasterHarness) -> ConfiguredSchedu
         )
         session.add_all([rules, *slots, *rooms])
         await session.flush()
-        session.add_all(
-            [ActivityRoom(activity_id=activity.id, room_id=room.id) for room in rooms]
-        )
+        session.add_all([ActivityRoom(activity_id=activity.id, room_id=room.id) for room in rooms])
         await session.commit()
         return ConfiguredSchedule(
             activity_id=activity.id,

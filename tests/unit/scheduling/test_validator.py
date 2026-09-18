@@ -35,7 +35,9 @@ def test_validator_rejects_student_with_advisor_on_panel(simple_input, valid_sol
         chair_id="teacher-advisor",
     )
 
-    assert "advisor_conflict" in violation_codes(simple_input, replace(valid_solution, groups=(group,)))
+    assert "advisor_conflict" in violation_codes(
+        simple_input, replace(valid_solution, groups=(group,))
+    )
 
 
 def test_exact_approved_exception_relaxes_only_its_conflict(simple_input, valid_solution) -> None:
@@ -86,8 +88,7 @@ def test_property_mutations_of_valid_assignments_are_detected(
         )
         data = replace(
             simple_input,
-            rooms=simple_input.rooms
-            + (replace(simple_input.rooms[0], id="room-2"),),
+            rooms=simple_input.rooms + (replace(simple_input.rooms[0], id="room-2"),),
         )
         assert expected_code(data, replace(valid_solution, groups=groups), "teacher_double_booked")
         return
@@ -106,7 +107,9 @@ def test_property_mutations_of_valid_assignments_are_detected(
         )
         groups = (replace(first, student_ids=("student-1", "student-2", "student-3")),)
         groups += (replace(first, id="group-2", room_id="room-2", student_ids=(), teacher_ids=()),)
-        assert expected_code(data, replace(valid_solution, groups=groups), "group_capacity_exceeded")
+        assert expected_code(
+            data, replace(valid_solution, groups=groups), "group_capacity_exceeded"
+        )
         return
     assert expected_code(simple_input, replace(valid_solution, groups=groups), expected)
 

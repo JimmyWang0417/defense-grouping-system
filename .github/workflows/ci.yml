@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commits title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python - <<'PY'
+          import os, re
+          title = os.environ["PR_TITLE"]
+          pattern = r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .+"
+          if re.fullmatch(pattern, title) is None:
+              raise SystemExit("PR title must follow Conventional Commits")
+          PY
+
+  static:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy src
+      - run: uv run pytest tests/repository -q
+
+  tests:
+    name: Python ${{ matrix.python-version }} tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest tests/unit -q
+      - run: uv run pytest tests/integration --ignore=tests/integration/test_postgres.py -q
+      - run: uv run pytest tests/client -q
+
+  postgres:
+    name: PostgreSQL compatibility
+    runs-on: ubuntu-latest
+    env:
+      RUN_POSTGRES_TESTS: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest tests/integration/test_postgres.py -q
+
+  web-build:
+    name: Flet web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run flet build web --yes
+
+  pr-gate:
+    name: PR Gate
+    if: always()
+    needs: [pr-title, static, tests, postgres, web-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every gate
+        env:
+          RESULTS: >-
+            ${{ needs.pr-title.result }} ${{ needs.static.result }}
+            ${{ needs.tests.result }} ${{ needs.postgres.result }}
+            ${{ needs.web-build.result }}
+        run: |
+          for result in $RESULTS; do
+            test "$result" = success
+          done

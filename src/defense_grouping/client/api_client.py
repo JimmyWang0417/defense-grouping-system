@@ -277,8 +277,7 @@ class ApiClient:
             if not all(isinstance(value, str) for value in (code, message, request_id)):
                 raise TypeError
             if not isinstance(fields, dict) or not all(
-                isinstance(key, str) and isinstance(value, str)
-                for key, value in fields.items()
+                isinstance(key, str) and isinstance(value, str) for key, value in fields.items()
             ):
                 raise TypeError
         except (KeyError, TypeError, ValueError):

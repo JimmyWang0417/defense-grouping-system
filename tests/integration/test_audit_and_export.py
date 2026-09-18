@@ -29,7 +29,14 @@ async def test_export_matches_published_plan(master_harness, configured_schedule
 
     assert response.status_code == 200, response.text
     workbook = load_workbook(BytesIO(response.content), read_only=True)
-    assert workbook.sheetnames == ["分组总表", "教师安排", "学生安排", "教室时段", "冲突与例外", "方案信息"]
+    assert workbook.sheetnames == [
+        "分组总表",
+        "教师安排",
+        "学生安排",
+        "教室时段",
+        "冲突与例外",
+        "方案信息",
+    ]
     assert workbook["分组总表"]["A2"].value == published.json()["groups"][0]["code"]
     assert workbook["方案信息"]["B2"].value == published.json()["version_number"]
 

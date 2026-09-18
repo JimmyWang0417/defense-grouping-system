@@ -22,9 +22,7 @@ class PlanWorkflow:
         self.client = client
 
     async def list(self, activity_id: str) -> list[dict[str, Any]]:
-        return await self.client.request_list(
-            "GET", f"/api/v1/activities/{activity_id}/plans"
-        )
+        return await self.client.request_list("GET", f"/api/v1/activities/{activity_id}/plans")
 
     async def detail(self, plan_id: str) -> dict[str, Any]:
         return await self.client.request("GET", f"/api/v1/plans/{plan_id}")

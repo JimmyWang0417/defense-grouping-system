@@ -130,13 +130,21 @@ def validate_solution(data: SchedulingInput, solution: ScheduleSolution) -> Vali
         slot = slots.get(group.slot_id)
         room = rooms.get(group.room_id)
         if slot is None:
-            violations.append(Violation("unknown_slot", "答辩组使用了不存在的时段", (group.id, group.slot_id)))
+            violations.append(
+                Violation("unknown_slot", "答辩组使用了不存在的时段", (group.id, group.slot_id))
+            )
         else:
             slot_group_counts[slot.id] += 1
         if room is None:
-            violations.append(Violation("unknown_room", "答辩组使用了不存在的教室", (group.id, group.room_id)))
+            violations.append(
+                Violation("unknown_room", "答辩组使用了不存在的教室", (group.id, group.room_id))
+            )
         elif group.slot_id not in room.available_slot_ids:
-            violations.append(Violation("room_unavailable", "教室在该时段不可用", (group.id, room.id, group.slot_id)))
+            violations.append(
+                Violation(
+                    "room_unavailable", "教室在该时段不可用", (group.id, room.id, group.slot_id)
+                )
+            )
         if room is not None and len(group.student_ids) > room.capacity:
             violations.append(
                 Violation(
@@ -163,15 +171,23 @@ def validate_solution(data: SchedulingInput, solution: ScheduleSolution) -> Vali
                 )
             )
         if len(set(group.teacher_ids)) != len(group.teacher_ids):
-            violations.append(Violation("duplicate_panel_teacher", "同一答辩组教师重复", (group.id,)))
+            violations.append(
+                Violation("duplicate_panel_teacher", "同一答辩组教师重复", (group.id,))
+            )
         if len(set(group.student_ids)) != len(group.student_ids):
-            violations.append(Violation("duplicate_group_student", "同一答辩组学生重复", (group.id,)))
+            violations.append(
+                Violation("duplicate_group_student", "同一答辩组学生重复", (group.id,))
+            )
 
         chair = teachers.get(group.chair_id)
         if group.chair_id not in group.teacher_ids or chair is None:
-            violations.append(Violation("chair_not_on_panel", "组长必须是本组教师", (group.id, group.chair_id)))
+            violations.append(
+                Violation("chair_not_on_panel", "组长必须是本组教师", (group.id, group.chair_id))
+            )
         elif chair.title_rank < data.rules.chair_min_title_rank:
-            violations.append(Violation("chair_title_insufficient", "组长职称不满足门槛", (group.id, chair.id)))
+            violations.append(
+                Violation("chair_title_insufficient", "组长职称不满足门槛", (group.id, chair.id))
+            )
 
         room_slot_uses[(group.room_id, group.slot_id)] += 1
         for student_id in group.student_ids:
@@ -179,13 +195,19 @@ def validate_solution(data: SchedulingInput, solution: ScheduleSolution) -> Vali
             student_slot_uses[(student_id, group.slot_id)] += 1
             student = students.get(student_id)
             if student is None:
-                violations.append(Violation("unknown_student", "答辩组包含未知学生", (group.id, student_id)))
+                violations.append(
+                    Violation("unknown_student", "答辩组包含未知学生", (group.id, student_id))
+                )
                 continue
             if group.slot_id not in student.available_slot_ids:
-                codes = availability_codes.get((student.id, group.slot_id), {"availability_conflict"})
+                codes = availability_codes.get(
+                    (student.id, group.slot_id), {"availability_conflict"}
+                )
                 unresolved = []
                 for code in codes:
-                    approved = find_availability_exception(data.exceptions, code, student.id, group.slot_id)
+                    approved = find_availability_exception(
+                        data.exceptions, code, student.id, group.slot_id
+                    )
                     if approved is None:
                         unresolved.append(code)
                     else:
@@ -219,13 +241,19 @@ def validate_solution(data: SchedulingInput, solution: ScheduleSolution) -> Vali
             teacher_slot_uses[(teacher_id, group.slot_id)] += 1
             teacher = teachers.get(teacher_id)
             if teacher is None:
-                violations.append(Violation("unknown_teacher", "答辩组包含未知教师", (group.id, teacher_id)))
+                violations.append(
+                    Violation("unknown_teacher", "答辩组包含未知教师", (group.id, teacher_id))
+                )
                 continue
             if group.slot_id not in teacher.available_slot_ids:
-                codes = availability_codes.get((teacher.id, group.slot_id), {"availability_conflict"})
+                codes = availability_codes.get(
+                    (teacher.id, group.slot_id), {"availability_conflict"}
+                )
                 unresolved = []
                 for code in codes:
-                    approved = find_availability_exception(data.exceptions, code, teacher.id, group.slot_id)
+                    approved = find_availability_exception(
+                        data.exceptions, code, teacher.id, group.slot_id
+                    )
                     if approved is None:
                         unresolved.append(code)
                     else:
@@ -253,13 +281,19 @@ def validate_solution(data: SchedulingInput, solution: ScheduleSolution) -> Vali
             )
     for (student_id, slot_id), count in sorted(student_slot_uses.items()):
         if count > 1:
-            violations.append(Violation("student_double_booked", "学生在同一时段重复安排", (student_id, slot_id)))
+            violations.append(
+                Violation("student_double_booked", "学生在同一时段重复安排", (student_id, slot_id))
+            )
     for (teacher_id, slot_id), count in sorted(teacher_slot_uses.items()):
         if count > 1:
-            violations.append(Violation("teacher_double_booked", "教师在同一时段重复安排", (teacher_id, slot_id)))
+            violations.append(
+                Violation("teacher_double_booked", "教师在同一时段重复安排", (teacher_id, slot_id))
+            )
     for (room_id, slot_id), count in sorted(room_slot_uses.items()):
         if count > 1:
-            violations.append(Violation("room_double_booked", "教室在同一时段重复安排", (room_id, slot_id)))
+            violations.append(
+                Violation("room_double_booked", "教室在同一时段重复安排", (room_id, slot_id))
+            )
     for slot_id, count in sorted(slot_group_counts.items()):
         slot = slots[slot_id]
         if count > slot.max_groups:

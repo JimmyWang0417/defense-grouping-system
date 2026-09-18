@@ -61,8 +61,6 @@ def approvals_view(_client: ApiClient, session: SessionState) -> ft.Control:
                     ft.Button("撤销", icon=ft.Icons.UNDO, disabled=True),
                 ]
             ),
-            ft.Text(
-                f"当前账号：{session.username or '-'}；申请人不会看到可用的批准/拒绝动作。"
-            ),
+            ft.Text(f"当前账号：{session.username or '-'}；申请人不会看到可用的批准/拒绝动作。"),
         ]
     )

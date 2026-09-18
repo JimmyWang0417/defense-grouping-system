@@ -18,10 +18,7 @@ def test_precheck_reports_insufficient_chairs(simple_input) -> None:
         students=students,
         teachers=tuple(teacher for teacher in simple_input.teachers if teacher.title_rank >= 4)[:2],
         slots=(replace(simple_input.slots[0], max_groups=3),),
-        rooms=tuple(
-            replace(simple_input.rooms[0], id=f"room-{index}")
-            for index in range(1, 4)
-        ),
+        rooms=tuple(replace(simple_input.rooms[0], id=f"room-{index}") for index in range(1, 4)),
     )
 
     diagnostics = run_prechecks(data)
