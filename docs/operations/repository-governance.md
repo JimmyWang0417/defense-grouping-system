@@ -64,3 +64,24 @@ Release，执行 `uv build`，上传 wheel 与 source archive。流程不发布 
 
 发布故障时保留 tag/Release 证据，修复后重跑失败 job；不要复用或泄露 token。定期轮换
 PAT，并在 owner 离开项目或权限变化时立即吊销。
+
+## 发布 GitHub Wiki
+
+Wiki 的版本化源文件位于 `docs/wiki/`。GitHub 只有在网页创建第一张 Wiki 页面后，才会建立
+可推送的 `.wiki.git` 仓库。第一次发布时，owner 打开仓库的 **Wiki** 标签页，创建标题为
+`Home` 的页面；页面内容可以只写“正在初始化”，保存后会被源文件中的 `Home.md` 覆盖。
+
+随后把 Wiki 仓库克隆到主仓库以外的临时目录，复制页面并推送：
+
+```bash
+git clone git@github.com:JimmyWang0417/defense-grouping-system.wiki.git \
+  /tmp/defense-grouping-system-wiki
+cp docs/wiki/*.md /tmp/defense-grouping-system-wiki/
+git -C /tmp/defense-grouping-system-wiki add .
+git -C /tmp/defense-grouping-system-wiki commit -m "docs: publish user wiki"
+git -C /tmp/defense-grouping-system-wiki push
+```
+
+`Home.md` 是首页，`_Sidebar.md` 是侧栏。其余文件名就是页面标题。以后修改 Wiki 时，先在
+主仓库修改 `docs/wiki/` 并经 Pull Request 合并，再重复复制、提交和推送；不要只在 Wiki
+网页修改，否则主仓库中的源文件会落后。
