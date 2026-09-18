@@ -13,6 +13,8 @@ from defense_grouping.config import Settings, get_settings
 from defense_grouping.db.session import Database
 from defense_grouping.imports_exports.routes import router as imports_router
 from defense_grouping.master_data.routes import router as master_data_router
+from defense_grouping.scheduling.executor import TaskExecutor
+from defense_grouping.scheduling.routes import router as scheduling_router
 
 RequestHandler = Callable[[Request], Awaitable[Response]]
 
@@ -21,16 +23,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Create an isolated FastAPI application for production or tests."""
     active_settings = settings or get_settings()
     database = Database(active_settings.database_url)
+    task_executor = TaskExecutor(database)
 
     @asynccontextmanager
     async def lifespan(active_app: FastAPI) -> AsyncIterator[None]:
+        active_executor = getattr(active_app.state, "task_executor", task_executor)
+        await active_executor.recover_interrupted_jobs()
         yield
+        await active_executor.shutdown()
         active_database = getattr(active_app.state, "database", database)
         await active_database.dispose()
 
     app = FastAPI(title="答辩分组系统", version="0.1.0", lifespan=lifespan)
     app.state.settings = active_settings
     app.state.database = database
+    app.state.task_executor = task_executor
     app.state.login_rate_limiter = LoginRateLimiter()
 
     @app.middleware("http")
@@ -87,4 +94,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(master_data_router)
     app.include_router(imports_router)
+    app.include_router(scheduling_router)
     return app

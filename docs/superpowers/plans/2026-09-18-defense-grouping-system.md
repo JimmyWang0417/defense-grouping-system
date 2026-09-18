@@ -1053,7 +1053,7 @@ pass, including seed reproducibility and independent validation of every returne
 - Produces teacher API: list the current teacher's published schedule and confirm one assignment.
 - Consumes: solver and validator from Tasks 6–7.
 
-- [ ] **Step 1: Write job and immutable publication tests**
+- [x] **Step 1: Write job and immutable publication tests**
 
 ```python
 def test_schedule_job_creates_new_ready_plan(admin_client, configured_activity):
@@ -1077,25 +1077,25 @@ def test_published_plan_cannot_be_mutated(admin_client, published_plan):
     assert response.json()["error"]["code"] == "published_plan_immutable"
 ```
 
-- [ ] **Step 2: Run lifecycle tests and verify failure**
+- [x] **Step 2: Run lifecycle tests and verify failure**
 
 Run: `uv run pytest tests/integration/test_schedule_jobs.py tests/integration/test_plan_lifecycle.py -q`
 
 Expected: FAIL because task and plan routes are absent.
 
-- [ ] **Step 3: Implement the local executor**
+- [x] **Step 3: Implement the local executor**
 
 Use one `ProcessPoolExecutor` for CP-SAT work. Build `SchedulingInput` and persist job state before submitting. Worker processes return only `SolveOutcome`; the API process writes plans and progress. On application startup, mark jobs left in `running` as `failed` with code `worker_interrupted`.
 
 Do not pass database sessions, ORM objects, loggers, or callbacks across the process boundary.
 
-- [ ] **Step 4: Implement plan versioning and adjustments**
+- [x] **Step 4: Implement plan versioning and adjustments**
 
 Copying a plan creates `version_number = max + 1`, `source_plan_id`, and draft group/assignment rows in one transaction. Manual adjustment accepts the client's optimistic-lock version, modifies only the draft, validates the whole affected plan, and rolls back on any unapproved hard conflict.
 
 Plan comparison returns assignment moves, teacher changes, slot/room changes, objective deltas, and exception-use deltas.
 
-- [ ] **Step 5: Implement publication state machine**
+- [x] **Step 5: Implement publication state machine**
 
 Allowed transitions are:
 
@@ -1108,7 +1108,7 @@ ready -> draft
 
 Publishing executes the independent validator in the same transaction, archives the previously published plan for that activity, publishes the selected plan, and records an audit event. A failed validation restores the plan to draft.
 
-- [ ] **Step 6: Pass job, idempotency, conflict, and lifecycle tests**
+- [x] **Step 6: Pass job, idempotency, conflict, and lifecycle tests**
 
 Test progress polling, duplicate idempotency key, worker exception, cancellation before start, timeout with a feasible incumbent, optimistic lock conflict, plan comparison, copy-on-change, publication rollback, teacher schedule isolation, and idempotent teacher confirmation.
 
@@ -1116,7 +1116,7 @@ Run: `uv run pytest tests/integration/test_schedule_jobs.py tests/integration/te
 
 Expected: all cases pass.
 
-- [ ] **Step 7: Run quality gates and commit**
+- [x] **Step 7: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -1125,6 +1125,15 @@ uv run pytest tests/integration/test_schedule_jobs.py tests/integration/test_pla
 git add src/defense_grouping/scheduling src/defense_grouping/api tests/integration
 git commit -m "feat: add asynchronous jobs and governed plan lifecycle"
 ```
+
+**Progress (2026-09-18):** Added a portable spawn-based process executor with persistent
+pending/running/terminal states, idempotent submission, cancellation, restart recovery, and
+worker-failure capture. Added the single database-to-solver input boundary, ready-plan
+persistence, copy/compare/manual-adjust workflows, optimistic locking, independent validation,
+immutable publication with prior-version archival, withdrawal, scoped teacher schedules, and
+idempotent confirmations. The initial six lifecycle tests returned 404 because routes were
+absent; ten completed Task 8 integration tests and all 56 current tests now pass, along with
+Ruff, strict mypy, Alembic drift detection, and whitespace validation.
 
 ---
 
