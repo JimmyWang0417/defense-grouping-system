@@ -330,6 +330,19 @@ API 错误包含稳定错误码、中文消息、字段错误和请求编号。�
 - 本地密钥、数据库、上传文件、备份和导出结果不得进入 Git。
 - public 仓库在用户明确选择开源许可证前不添加许可证文件；公开可读不自动授予再分发许可。
 
+### 15.4 Pull Request 门禁、仓库规则与自动发布
+
+仓库治理配置必须与代码一同接受版本控制，不只依赖 GitHub 网页中的手工设置：
+
+- `.github/workflows/ci.yml` 在 Pull Request、`main` 推送、合并队列和手工触发时运行。它以最小只读权限执行 Ruff 格式与静态检查、严格 mypy、Python 3.12/3.14 单元与 SQLite 集成测试、PostgreSQL 集成测试、客户端测试和 Flet Web 构建冒烟；所有子任务由名称固定为 `PR Gate` 的聚合检查统一收口。
+- Pull Request 标题必须使用 Conventional Commits 类型；工作流、依赖锁文件、迁移和仓库治理配置的变更也必须经过相同门禁。失败、取消或未运行的必需子任务都会使 `PR Gate` 失败，不能通过跳过工作流绕开规则。
+- `.github/workflows/performance.yml` 每夜及手工运行 500 名学生的性能验收，不阻塞普通 Pull Request，但结果进入完成证据。
+- `.github/rulesets/main.json` 是 `main` 分支规则的权威声明：禁止删除和强推，要求通过 Pull Request 合入，要求解决全部 review conversation，限制为 squash 或 rebase 合并，并以严格模式要求 `PR Gate` 通过。仓库只有一个 owner 时不强制他人审批，批准数为 0；owner 仍走 Pull Request 与测试门禁，紧急解锁只能通过显式停用 ruleset 并留下 GitHub 审计记录。
+- `scripts/configure_github_rules.py` 通过 GitHub API 幂等创建或更新 ruleset。脚本先确认 `PR Gate` 已在远端成功运行，再激活必需检查，避免首次配置把默认分支锁死；默认 dry-run，只有显式 `--apply` 才修改远端。
+- `.github/workflows/release.yml` 使用 release-please 和 Conventional Commits 维护版本 Pull Request。release PR 通过同一 `PR Gate` 并合入后，自动创建语义化标签与 GitHub Release，构建 wheel/sdist 并附加到 Release；不自动发布 PyPI、不部署服务，也不添加许可证。
+- release-please 使用仓库 secret `RELEASE_PLEASE_TOKEN`，该 fine-grained token 只授予本仓库 Contents 与 Pull requests 写权限，使机器人创建的 release PR 能触发正常 CI。工作流内所有第三方 Action 固定到完整提交 SHA，并以注释记录对应版本。
+- ruleset、工作流权限、触发条件、稳定检查名、发布配置和配置脚本必须有仓库级自动化测试；实际远端 ruleset 内容在最终验收时通过 GitHub API 回读并与声明文件比较。
+
 ## 16. 完成定义
 
 首版只有同时满足以下条件才算完成：
@@ -344,3 +357,4 @@ API 错误包含稳定错误码、中文消息、字段错误和请求编号。�
 8. 参考数据集达到规定的性能指标。
 9. 后端、客户端和数据库迁移测试全部通过。
 10. 提供 SQLite 本地运行说明以及 PostgreSQL 服务器迁移说明。
+11. Pull Request 的 `PR Gate`、版本化 ruleset、夜间性能检查和自动 GitHub Release 流程均通过配置测试；远端启用 ruleset 前必须已有一次成功的 `PR Gate` 运行。

@@ -1403,16 +1403,26 @@ git commit -m "feat: complete Flet academic scheduling workflows"
 - Create: `tests/performance/generate_dataset.py`
 - Create: `tests/performance/test_department_scale.py`
 - Create: `tests/integration/test_postgres.py`
+- Create: `tests/repository/test_github_governance.py`
 - Create: `.github/workflows/ci.yml`
+- Create: `.github/workflows/performance.yml`
+- Create: `.github/workflows/release.yml`
+- Create: `.github/rulesets/main.json`
+- Create: `.github/pull_request_template.md`
+- Create: `release-please-config.json`
+- Create: `.release-please-manifest.json`
+- Create: `scripts/configure_github_rules.py`
 - Create: `docs/operations/local-development.md`
 - Create: `docs/operations/desktop-packaging.md`
 - Create: `docs/operations/server-migration.md`
 - Create: `docs/operations/backup-recovery.md`
+- Create: `docs/operations/repository-governance.md`
 - Modify: `README.md`
 
 **Interfaces:**
 - Produces deterministic 500-student/50-teacher/20-group performance fixture.
-- Produces CI evidence for lint, typing, unit, integration, PostgreSQL, and build smoke tests.
+- Produces a stable `PR Gate` with CI evidence for lint, typing, unit, integration, PostgreSQL, client, and build smoke tests.
+- Produces a versioned, idempotently applicable `main` ruleset and automatic GitHub Release flow.
 - Produces exact local startup, desktop build, server migration, and recovery instructions.
 
 - [ ] **Step 1: Write the performance acceptance test**
@@ -1454,11 +1464,47 @@ Generate exactly 500 students, 50 teachers, 20 groups, 8 slots, and 24 rooms. Gu
 
 Using `testcontainers.postgres.PostgresContainer`, run Alembic to head and execute login, master-data creation, import, activity creation, one small solve, publication, and export. Assert no SQLite-only SQL or type behavior is used.
 
-- [ ] **Step 4: Add CI jobs**
+- [ ] **Step 4: Write repository-governance tests and verify failure**
 
-Configure Linux CI on Python 3.12 and 3.14. Run `uv sync --locked`, Ruff, mypy, unit tests, SQLite integration tests, PostgreSQL integration tests, client tests, and `flet build web --yes`. Run the 500-student performance test manually and nightly, not on every pull request.
+Test the governance files as one contract:
 
-- [ ] **Step 5: Write exact operating guides**
+```python
+def test_main_ruleset_requires_the_stable_pr_gate(governance_contract):
+    assert governance_contract.ruleset["enforcement"] == "active"
+    assert governance_contract.required_checks == {"PR Gate"}
+    assert governance_contract.pull_request["required_approving_review_count"] == 0
+    assert governance_contract.pull_request["required_review_thread_resolution"] is True
+    assert governance_contract.blocks_deletion_and_force_push
+
+
+def test_release_requires_ci_and_only_publishes_github_assets(governance_contract):
+    assert governance_contract.release_trigger == "push:main"
+    assert governance_contract.release_token == "RELEASE_PLEASE_TOKEN"
+    assert governance_contract.uploaded_assets == {"dist/*.whl", "dist/*.tar.gz"}
+    assert not governance_contract.publishes_to_pypi
+```
+
+Run: `uv run pytest tests/repository/test_github_governance.py -q`
+
+Expected: FAIL because workflows, ruleset, release configuration, and configuration script are absent.
+
+- [ ] **Step 5: Add PR CI and nightly performance jobs**
+
+Configure Linux CI for `pull_request`, `push` to `main`, `merge_group`, and `workflow_dispatch`. Use least-privilege `contents: read`, concurrency cancellation, dependency caching, and full-SHA-pinned third-party Actions. Run `uv sync --locked`, `ruff format --check`, Ruff, mypy, unit tests and SQLite integration tests on Python 3.12 and 3.14, PostgreSQL integration tests, client tests, and `flet build web --yes`. End with an unconditional `PR Gate` aggregation job that fails unless every required dependency succeeded. Run the 500-student performance test in a separate workflow manually and nightly, not on every pull request.
+
+- [ ] **Step 6: Add versioned main-branch rules and automatic releases**
+
+Declare `.github/rulesets/main.json` with active enforcement for `~DEFAULT_BRANCH`, no bypass actors, deletion and non-fast-forward protection, required Pull Requests, resolved review conversations, zero mandatory approvals for the solo-owner repository, squash/rebase merge methods, and a strict required `PR Gate` status check.
+
+Implement `scripts/configure_github_rules.py` as a standard-library CLI. It must infer or accept `owner/repo`, use `gh api` without reading tokens into process output, compare normalized remote and local rules, verify a successful recent `PR Gate`, print a dry-run diff by default, and create/update only with `--apply`. A failed precondition must make no remote mutation.
+
+Configure release-please for Python and initial version `0.1.0`. On a successful `main` merge, `.github/workflows/release.yml` uses the least-privileged `RELEASE_PLEASE_TOKEN` to create/update a Conventional Commits release PR; after that PR passes `PR Gate` and is merged, it creates the GitHub Release, builds wheel/sdist with `uv build`, and uploads `dist/*.whl` plus `dist/*.tar.gz`. Do not publish to PyPI, deploy services, or add a license.
+
+Run: `uv run pytest tests/repository/test_github_governance.py -q`
+
+Expected: all governance contract, dry-run, idempotency, precondition, permission, pinning, and release-asset tests pass.
+
+- [ ] **Step 7: Write exact operating guides**
 
 Document:
 
@@ -1472,9 +1518,9 @@ uv run flet pack main.py --name defense-grouping-system
 uv run flet build web
 ```
 
-The server guide must include PostgreSQL URL format, Alembic migration, reverse-proxy HTTPS, CORS allowlist, task-executor replacement boundary, backup schedule, and rollback procedure. State that desktop artifacts must be built on each target OS because Flet/PyInstaller is not a cross-compiler.
+The server guide must include PostgreSQL URL format, Alembic migration, reverse-proxy HTTPS, CORS allowlist, task-executor replacement boundary, backup schedule, and rollback procedure. State that desktop artifacts must be built on each target OS because Flet/PyInstaller is not a cross-compiler. The repository-governance guide must explain the `RELEASE_PLEASE_TOKEN` permissions, first successful `PR Gate`, dry-run/apply ruleset sequence, rule recovery, Conventional Commits release behavior, and GitHub API verification commands.
 
-- [ ] **Step 6: Run the full completion audit**
+- [ ] **Step 8: Run the full completion audit**
 
 Run:
 
@@ -1482,19 +1528,21 @@ Run:
 uv run ruff check .
 uv run mypy src
 uv run pytest tests/unit tests/integration tests/client tests/e2e -q
+uv run pytest tests/repository/test_github_governance.py -q
 uv run pytest tests/performance/test_department_scale.py -q -m performance
 uv run alembic check
 uv run flet build web --yes
+uv run python scripts/configure_github_rules.py --repo JimmyWang0417/defense-grouping-system
 git status --short
 ```
 
-Expected: all checks pass, the performance budget is met, the Web build succeeds, and only intentional files are modified.
+Expected: all checks pass, the performance budget is met, the Web build succeeds, ruleset dry-run reports the exact intended remote change (or no drift after application), and only intentional files are modified. Because this implementation session does not push, create a Pull Request, or deploy, run `--apply` only after the workflow commit is present on GitHub and `PR Gate` has succeeded there.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add .github README.md docs/operations tests/performance tests/integration/test_postgres.py
-git commit -m "docs: complete deployment and performance acceptance"
+git add .github .release-please-manifest.json release-please-config.json scripts/configure_github_rules.py README.md docs/operations tests/performance tests/integration/test_postgres.py tests/repository
+git commit -m "ci: enforce pull request and release governance"
 ```
 
 ---
