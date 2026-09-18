@@ -618,7 +618,7 @@ that a repeated bootstrap does not reset the administrator password.
 - Produces: `AvailabilityService.is_available(person_type, person_id, slot_id) -> AvailabilityResult`.
 - Produces: `ActivityService.snapshot(activity_id) -> ActivitySnapshot` for import and scheduling tasks.
 
-- [ ] **Step 1: Write cross-entity and scope tests**
+- [x] **Step 1: Write cross-entity and scope tests**
 
 ```python
 def test_student_advisor_must_belong_to_activity_department(admin_client, department, other_teacher):
@@ -645,13 +645,13 @@ def test_overlapping_slots_are_rejected(admin_client, activity, slot):
     assert response.json()["error"]["code"] == "slot_overlap"
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Run: `uv run pytest tests/integration/test_master_data_api.py tests/integration/test_activity_api.py -q`
 
 Expected: FAIL with missing routes.
 
-- [ ] **Step 3: Implement schemas and service contracts**
+- [x] **Step 3: Implement schemas and service contracts**
 
 ```python
 from datetime import date, time
@@ -690,7 +690,7 @@ class SlotWrite(BaseModel):
 
 Every list endpoint accepts `page`, `page_size`, `search`, and deterministic `sort`; cap `page_size` at 200. Service methods accept `Principal`, enforce department scope, and raise typed domain errors translated by one API exception handler.
 
-- [ ] **Step 4: Implement availability normalization**
+- [x] **Step 4: Implement availability normalization**
 
 Persist expanded, exact-date course occupancies. The course import service may derive them from term/week data, but the scheduler reads only exact intervals. `AvailabilityService` reports all blocking records, not only a boolean:
 
@@ -712,7 +712,7 @@ class AvailabilityResult:
     blocks: tuple[AvailabilityBlock, ...]
 ```
 
-- [ ] **Step 5: Pass API and invariant tests**
+- [x] **Step 5: Pass API and invariant tests**
 
 Add tests for duplicate business numbers, pagination, department isolation, leave/slot overlap boundaries, activity rule validation, room capacity, and optimistic lock conflicts.
 
@@ -720,7 +720,7 @@ Run: `uv run pytest tests/integration/test_master_data_api.py tests/integration/
 
 Expected: all cases pass.
 
-- [ ] **Step 6: Run quality gates and commit**
+- [x] **Step 6: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -729,6 +729,12 @@ uv run pytest tests/integration/test_master_data_api.py tests/integration/test_a
 git add src/defense_grouping/master_data src/defense_grouping/api tests/integration
 git commit -m "feat: add scoped academic data and activity APIs"
 ```
+
+**Progress (2026-09-18):** Added department-scoped paginated CRUD for academic data,
+availability and defense activities; deterministic search/sort; cross-entity validation;
+optimistic locking; versioned rules; exact UTC interval normalization; and activity snapshots.
+All seven new tests were first observed returning 404, then passed; the full current unit and
+integration suite reports 22 passed, with Ruff and strict mypy also passing.
 
 ---
 

@@ -11,6 +11,7 @@ from defense_grouping.auth.rate_limit import LoginRateLimiter
 from defense_grouping.auth.routes import router as auth_router
 from defense_grouping.config import Settings, get_settings
 from defense_grouping.db.session import Database
+from defense_grouping.master_data.routes import router as master_data_router
 
 RequestHandler = Callable[[Request], Awaitable[Response]]
 
@@ -83,4 +84,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "database": database}
 
     app.include_router(auth_router)
+    app.include_router(master_data_router)
     return app
