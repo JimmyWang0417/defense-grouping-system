@@ -85,6 +85,7 @@ async def master_harness(tmp_path: Path) -> AsyncIterator[MasterHarness]:
         for username, role, scope in (
             ("system-admin", Role.SYSTEM_ADMIN, None),
             ("academic-admin", Role.ACADEMIC_ADMIN, department.id),
+            ("approver-admin", Role.ACADEMIC_ADMIN, department.id),
             ("other-admin", Role.ACADEMIC_ADMIN, other_department.id),
         ):
             user = User(

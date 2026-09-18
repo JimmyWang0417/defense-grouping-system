@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from defense_grouping.api.errors import APIError
 from defense_grouping.auth.permissions import Principal
 from defense_grouping.db.base import as_utc, utc_now
+from defense_grouping.governance.audit import write_audit
 from defense_grouping.master_data.service import check_version, require_department_scope
 from defense_grouping.models.availability import (
     CourseOccupancy,
@@ -34,7 +35,7 @@ from defense_grouping.models.defense import (
     StudentAssignment,
     TeacherConfirmation,
 )
-from defense_grouping.models.governance import ApprovalStatus, AuditLog, ConstraintException
+from defense_grouping.models.governance import ApprovalStatus, ConstraintException
 from defense_grouping.models.master import (
     Student,
     StudentDirection,
@@ -870,16 +871,15 @@ async def publish_plan(
             if item.id not in existing_confirmation_ids
         ]
     )
-    session.add(
-        AuditLog(
-            actor_id=principal.user_id,
-            action="plan.publish",
-            object_type="schedule_plan",
-            object_id=plan.id,
-            request_id=request_id,
-            before_summary={"status": PlanStatus.READY.value},
-            after_summary={"status": PlanStatus.PUBLISHED.value},
-        )
+    await write_audit(
+        session,
+        actor_id=principal.user_id,
+        action="plan.publish",
+        object_type="schedule_plan",
+        object_id=plan.id,
+        request_id=request_id,
+        before_summary={"status": PlanStatus.READY.value},
+        after_summary={"status": PlanStatus.PUBLISHED.value},
     )
     await session.commit()
     return plan
@@ -895,16 +895,15 @@ async def archive_plan(
         raise APIError(status_code=409, code="invalid_plan_transition", message="只有已发布方案可撤回")
     plan.status = PlanStatus.ARCHIVED
     plan.version += 1
-    session.add(
-        AuditLog(
-            actor_id=principal.user_id,
-            action="plan.withdraw",
-            object_type="schedule_plan",
-            object_id=plan.id,
-            request_id=request_id,
-            before_summary={"status": PlanStatus.PUBLISHED.value},
-            after_summary={"status": PlanStatus.ARCHIVED.value},
-        )
+    await write_audit(
+        session,
+        actor_id=principal.user_id,
+        action="plan.withdraw",
+        object_type="schedule_plan",
+        object_id=plan.id,
+        request_id=request_id,
+        before_summary={"status": PlanStatus.PUBLISHED.value},
+        after_summary={"status": PlanStatus.ARCHIVED.value},
     )
     await session.commit()
     return plan

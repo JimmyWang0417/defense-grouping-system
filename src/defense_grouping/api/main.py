@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from uuid import UUID
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,6 +12,9 @@ from defense_grouping.auth.rate_limit import LoginRateLimiter
 from defense_grouping.auth.routes import router as auth_router
 from defense_grouping.config import Settings, get_settings
 from defense_grouping.db.session import Database
+from defense_grouping.governance.audit import write_audit
+from defense_grouping.governance.routes import router as governance_router
+from defense_grouping.imports_exports.routes import export_router
 from defense_grouping.imports_exports.routes import router as imports_router
 from defense_grouping.master_data.routes import router as master_data_router
 from defense_grouping.scheduling.executor import TaskExecutor
@@ -46,6 +50,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request.state.request_id = request_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
+        return response
+
+    @app.middleware("http")
+    async def audit_successful_writes(request: Request, call_next: RequestHandler) -> Response:
+        response = await call_next(request)
+        if request.method not in {"POST", "PUT", "PATCH", "DELETE"} or response.status_code >= 400:
+            return response
+        object_id: UUID | None = None
+        for raw_value in request.path_params.values():
+            try:
+                object_id = UUID(str(raw_value))
+                break
+            except ValueError:
+                continue
+        route = request.scope.get("route")
+        route_path = getattr(route, "path", request.url.path)
+        active_database = getattr(request.app.state, "database", database)
+        async with active_database.session() as audit_session:
+            await write_audit(
+                audit_session,
+                actor_id=getattr(request.state, "actor_id", None),
+                action=f"http.{request.method.casefold()}",
+                object_type=str(route_path),
+                object_id=object_id,
+                request_id=request.state.request_id,
+                before_summary=None,
+                after_summary={"status_code": response.status_code},
+            )
+            await audit_session.commit()
         return response
 
     @app.exception_handler(404)
@@ -94,5 +127,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(master_data_router)
     app.include_router(imports_router)
+    app.include_router(export_router)
     app.include_router(scheduling_router)
+    app.include_router(governance_router)
     return app

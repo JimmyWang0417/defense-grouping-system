@@ -2,6 +2,7 @@ from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from defense_grouping.api.dependencies import (
@@ -31,12 +32,13 @@ from defense_grouping.auth.service import (
     list_users,
     login,
     logout,
+    normalize_username,
     replace_user_roles,
     reset_user_password,
     rotate_refresh_token,
     set_user_status,
 )
-from defense_grouping.models.identity import Role
+from defense_grouping.models.identity import Role, User
 
 router = APIRouter(prefix="/api/v1")
 
@@ -56,7 +58,7 @@ async def login_route(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> TokenPair:
     client_ip = request.client.host if request.client is not None else "unknown"
-    return await login(
+    tokens = await login(
         session,
         request.app.state.settings,
         get_rate_limiter(request),
@@ -65,6 +67,11 @@ async def login_route(
         client_ip=client_ip,
         device_info=payload.device_info,
     )
+    user_id = await session.scalar(
+        select(User.id).where(User.username == normalize_username(payload.username))
+    )
+    request.state.actor_id = user_id
+    return tokens
 
 
 @router.post("/auth/refresh", response_model=TokenPair)

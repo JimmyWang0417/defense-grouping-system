@@ -12,6 +12,7 @@ from defense_grouping.api.dependencies import get_db_session
 from defense_grouping.api.errors import APIError
 from defense_grouping.auth.permissions import Principal, require_roles
 from defense_grouping.db.session import Database
+from defense_grouping.imports_exports.export_service import export_plan_workbook
 from defense_grouping.imports_exports.import_service import (
     DefaultImportWriter,
     ImportWriter,
@@ -28,8 +29,10 @@ from defense_grouping.imports_exports.templates import TEMPLATES, generate_templ
 from defense_grouping.master_data.service import require_department_scope
 from defense_grouping.models.governance import ImportBatch, ImportStatus
 from defense_grouping.models.identity import Role
+from defense_grouping.scheduling.service import get_plan_scoped
 
 router = APIRouter(prefix="/api/v1/imports")
+export_router = APIRouter(prefix="/api/v1")
 
 ScopedAdmin = Annotated[
     Principal,
@@ -154,4 +157,20 @@ async def confirm_preview(
         writer,
         actor_id=principal.user_id,
         request_id=request.state.request_id,
+    )
+
+
+@export_router.get("/plans/{plan_id}/export")
+async def export_plan(
+    plan_id: UUID,
+    principal: ScopedAdmin,
+    session: Session,
+) -> Response:
+    plan = await get_plan_scoped(session, principal, plan_id)
+    content = await export_plan_workbook(session, plan)
+    filename = quote(f"答辩方案-v{plan.version_number}.xlsx")
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
     )

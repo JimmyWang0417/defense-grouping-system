@@ -73,6 +73,7 @@ async def get_auth_context(
             if assignment.department_id is not None
         ),
     )
+    request.state.actor_id = user.id
     return AuthContext(user=user, principal=principal, claims=claims)
 
 

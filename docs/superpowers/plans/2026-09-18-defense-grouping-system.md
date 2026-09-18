@@ -1159,7 +1159,7 @@ Ruff, strict mypy, Alembic drift detection, and whitespace validation.
 - Produces `.xlsx` export for published plans.
 - Produces CLI: `backup`, `restore`, and `seed-demo`.
 
-- [ ] **Step 1: Write four-eyes and export consistency tests**
+- [x] **Step 1: Write four-eyes and export consistency tests**
 
 ```python
 def test_requester_cannot_approve_own_exception(admin_client, own_exception):
@@ -1174,13 +1174,13 @@ def test_export_matches_published_plan(admin_client, published_plan):
     assert workbook["方案信息"]["B2"].value == published_plan.version_number
 ```
 
-- [ ] **Step 2: Run governance tests and verify failure**
+- [x] **Step 2: Run governance tests and verify failure**
 
 Run: `uv run pytest tests/integration/test_approvals.py tests/integration/test_audit_and_export.py tests/integration/test_backup_restore.py -q`
 
 Expected: FAIL because governance routes and exporters are absent.
 
-- [ ] **Step 3: Implement exact-scope exception approval**
+- [x] **Step 3: Implement exact-scope exception approval**
 
 Use this command contract:
 
@@ -1199,17 +1199,17 @@ class ExceptionRequest(BaseModel):
 
 Validate required ID combinations for each constraint code. The requester and approver must be different active users with access to the activity department. Revocation affects only future schedule validation; published plans retain the historical approval snapshot.
 
-- [ ] **Step 4: Add append-only audit middleware and services**
+- [x] **Step 4: Add append-only audit middleware and services**
 
 Record actor, action, object type/ID, request ID, UTC time, and redacted before/after summaries. Refuse update/delete operations on `audit_logs` at the repository layer. Redact fields named `password`, `password_hash`, `token`, `refresh_token`, and `jwt_secret` recursively. Instrument the existing auth, master-data, import, scheduling, plan-publication, and teacher-confirmation services in this task so every sensitive operation uses the same audit writer.
 
-- [ ] **Step 5: Implement Excel export and SQLite backup/restore**
+- [x] **Step 5: Implement Excel export and SQLite backup/restore**
 
 Export sheets named `分组总表`, `教师安排`, `学生安排`, `教室时段`, `冲突与例外`, and `方案信息`. Use the persisted published plan, not a new solver snapshot.
 
 For SQLite backup, use the SQLite online backup API to create a timestamped file and SHA-256 manifest. Restore verifies the hash and schema revision, creates a pre-restore backup, replaces the database only while the API is stopped, then runs a read-only integrity check.
 
-- [ ] **Step 6: Pass governance and recovery tests**
+- [x] **Step 6: Pass governance and recovery tests**
 
 Test approve/reject/revoke transitions, self-approval, expired exception, audit redaction, export rows, backup hash failure, and successful round-trip restore.
 
@@ -1217,7 +1217,7 @@ Run: `uv run pytest tests/integration/test_approvals.py tests/integration/test_a
 
 Expected: all cases pass.
 
-- [ ] **Step 7: Run quality gates and commit**
+- [x] **Step 7: Run quality gates and commit**
 
 ```bash
 uv run ruff check .

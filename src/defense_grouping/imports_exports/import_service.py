@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from defense_grouping.api.errors import APIError
 from defense_grouping.db.session import Database
 from defense_grouping.db.types import PersonType
+from defense_grouping.governance.audit import write_audit
 from defense_grouping.imports_exports.schemas import (
     ImportIssue,
     ImportKind,
@@ -36,7 +37,7 @@ from defense_grouping.models.availability import (
     RoomAvailability,
 )
 from defense_grouping.models.defense import DefenseActivity, DefenseSlot
-from defense_grouping.models.governance import AuditLog, ImportBatch, ImportStatus
+from defense_grouping.models.governance import ImportBatch, ImportStatus
 from defense_grouping.models.master import (
     AcademicTerm,
     Department,
@@ -939,21 +940,20 @@ async def confirm_import(
         batch.update_count = updates
         batch.unchanged_count = unchanged
         batch.confirmed_at = datetime.now(UTC)
-        session.add(
-            AuditLog(
-                actor_id=actor_id,
-                action="import.confirmed",
-                object_type="import_batch",
-                object_id=batch_id,
-                request_id=request_id,
-                before_summary={"status": ImportStatus.READY.value},
-                after_summary={
-                    "status": ImportStatus.CONFIRMED.value,
-                    "creates": creates,
-                    "updates": updates,
-                    "unchanged": unchanged,
-                },
-            )
+        await write_audit(
+            session,
+            actor_id=actor_id,
+            action="import.confirmed",
+            object_type="import_batch",
+            object_id=batch_id,
+            request_id=request_id,
+            before_summary={"status": ImportStatus.READY.value},
+            after_summary={
+                "status": ImportStatus.CONFIRMED.value,
+                "creates": creates,
+                "updates": updates,
+                "unchanged": unchanged,
+            },
         )
         await session.commit()
     except Exception as exc:
