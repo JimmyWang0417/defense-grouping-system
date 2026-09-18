@@ -486,7 +486,7 @@ strict mypy pass.
 - Produces API: `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/change-password`, and `GET /me`.
 - Produces system-admin APIs for user creation, activation/deactivation, role assignment, department scope, and temporary-password reset.
 
-- [ ] **Step 1: Write password and token tests**
+- [x] **Step 1: Write password and token tests**
 
 ```python
 # tests/unit/test_security.py
@@ -511,13 +511,13 @@ def test_teacher_cannot_access_admin_route(client, teacher_token):
     assert response.json()["error"]["code"] == "forbidden"
 ```
 
-- [ ] **Step 2: Run auth tests and verify failure**
+- [x] **Step 2: Run auth tests and verify failure**
 
 Run: `uv run pytest tests/unit/test_security.py tests/integration/test_auth_api.py -q`
 
 Expected: FAIL because auth modules and fixtures are absent.
 
-- [ ] **Step 3: Implement security primitives**
+- [x] **Step 3: Implement security primitives**
 
 ```python
 # src/defense_grouping/auth/security.py
@@ -551,7 +551,7 @@ def new_refresh_token() -> tuple[str, str]:
 
 Store only the refresh-token SHA-256 digest. Rotate refresh tokens on every refresh and revoke the old record in the same transaction. Return a generic login error for unknown username and wrong password.
 
-- [ ] **Step 4: Implement RBAC and bootstrap admin CLI**
+- [x] **Step 4: Implement RBAC and bootstrap admin CLI**
 
 ```python
 from dataclasses import dataclass
@@ -576,7 +576,7 @@ Implement `defense-grouping init-admin --username admin`. It generates a random 
 
 Implement a `LoginRateLimiter` keyed by normalized username and client IP. In local mode it allows 5 failed attempts per 15 minutes and clears the counter after a successful login. Expose a storage protocol so server deployment can replace the in-memory implementation with Redis. The rate-limit response is HTTP 429 with code `login_rate_limited` and a `Retry-After` header.
 
-- [ ] **Step 5: Register auth routes and test refresh rotation**
+- [x] **Step 5: Register auth routes and test refresh rotation**
 
 Add integration cases for successful login, mandatory first password change, expired access token, refresh rotation, logout revocation, login rate limiting, system-admin user lifecycle, and an academic administrator denied access to another department.
 
@@ -584,7 +584,7 @@ Run: `uv run pytest tests/unit/test_security.py tests/integration/test_auth_api.
 
 Expected: all cases pass.
 
-- [ ] **Step 6: Run quality gates and commit**
+- [x] **Step 6: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -593,6 +593,13 @@ uv run pytest tests/unit/test_security.py tests/integration/test_auth_api.py -q
 git add src/defense_grouping/auth src/defense_grouping/api src/defense_grouping/cli.py tests
 git commit -m "feat: add secure authentication and scoped RBAC"
 ```
+
+**Progress (2026-09-18):** Added Argon2 password hashing, short-lived JWT access tokens,
+digest-only rotating refresh tokens, first-login password enforcement, five-attempt login
+rate limiting, three-role/department principals, system-admin user lifecycle APIs, and the
+idempotent `init-admin` CLI. Auth tests were first observed failing because the package was
+absent; 11 tests now pass, Ruff and strict mypy pass, and a temporary migrated database proved
+that a repeated bootstrap does not reset the administrator password.
 
 ---
 

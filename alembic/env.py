@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import Connection, pool
@@ -11,6 +12,9 @@ from alembic import context
 from defense_grouping.db.base import Base
 
 config = context.config
+
+if database_url := os.getenv("DEFENSE_DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
