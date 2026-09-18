@@ -20,8 +20,18 @@ from defense_grouping.client.session import (
     SessionState,
 )
 from defense_grouping.client.theme import build_theme
+from defense_grouping.client.views.activity_wizard import activity_wizard_view
+from defense_grouping.client.views.approvals import approvals_view
+from defense_grouping.client.views.audit import audit_view
+from defense_grouping.client.views.availability import availability_view
 from defense_grouping.client.views.dashboard import dashboard_view, placeholder_view
+from defense_grouping.client.views.imports import imports_view
 from defense_grouping.client.views.login import change_password_view, login_view
+from defense_grouping.client.views.master_data import master_data_view
+from defense_grouping.client.views.my_schedule import my_schedule_view
+from defense_grouping.client.views.plans import plans_view
+from defense_grouping.client.views.scheduling import scheduling_view
+from defense_grouping.client.views.system_admin import system_admin_view
 
 LOCAL_API_URL = "http://127.0.0.1:8765"
 _sidecar: subprocess.Popen[bytes] | None = None
@@ -150,11 +160,7 @@ class ClientApplication:
                 return status_view(403, "无权访问", "当前账号没有访问此页面的权限。")
             if decision is not RouteDecision.ALLOW:
                 return self._not_found()
-            content = (
-                dashboard_view(self.session)
-                if path == "/dashboard"
-                else placeholder_view(label)
-            )
+            content = self._workflow_content(path, label)
             return app_shell(
                 self.page,
                 self.session,
@@ -163,6 +169,23 @@ class ClientApplication:
             )
 
         return component
+
+    def _workflow_content(self, path: str, label: str) -> ft.Control:
+        factories: dict[str, Callable[[], ft.Control]] = {
+            "/dashboard": lambda: dashboard_view(self.session),
+            "/master-data": lambda: master_data_view(self.client),
+            "/availability": lambda: availability_view(self.client),
+            "/imports": lambda: imports_view(self.client),
+            "/activities": lambda: activity_wizard_view(self.client),
+            "/scheduling": lambda: scheduling_view(self.client),
+            "/plans": lambda: plans_view(self.client),
+            "/approvals": lambda: approvals_view(self.client, self.session),
+            "/my-schedule": lambda: my_schedule_view(self.client),
+            "/audit": lambda: audit_view(self.client),
+            "/system": lambda: system_admin_view(self.client),
+        }
+        factory = factories.get(path)
+        return factory() if factory is not None else placeholder_view(label)
 
     async def _logout(self) -> None:
         try:

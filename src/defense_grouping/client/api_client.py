@@ -72,6 +72,51 @@ class ApiClient:
             return {}
         return self._json_object(response)
 
+    async def request_bytes(self, method: str, path: str, **kwargs: Any) -> bytes:
+        self._validate_path(path)
+        response = await self._send(method, path, **kwargs)
+        if response.status_code == 401 and self._token_store.get() is not None:
+            original_response = response
+            if await self._refresh():
+                response = await self._send(method, path, **kwargs)
+            else:
+                self._raise_for_error(original_response)
+        self._raise_for_error(response)
+        return response.content
+
+    async def request_list(
+        self,
+        method: str,
+        path: str,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        self._validate_path(path)
+        response = await self._send(method, path, **kwargs)
+        if response.status_code == 401 and self._token_store.get() is not None:
+            original_response = response
+            if await self._refresh():
+                response = await self._send(method, path, **kwargs)
+            else:
+                self._raise_for_error(original_response)
+        self._raise_for_error(response)
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise ApiError(
+                "invalid_api_response",
+                "服务返回了无法解析的响应",
+                response.headers.get("X-Request-ID", "-"),
+                status_code=502,
+            ) from exc
+        if not isinstance(payload, list) or not all(isinstance(item, dict) for item in payload):
+            raise ApiError(
+                "invalid_api_response",
+                "服务返回了无效的列表",
+                response.headers.get("X-Request-ID", "-"),
+                status_code=502,
+            )
+        return payload
+
     async def login(
         self,
         username: str,

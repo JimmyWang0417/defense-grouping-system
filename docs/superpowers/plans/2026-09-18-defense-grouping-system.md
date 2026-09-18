@@ -1364,7 +1364,7 @@ git commit -m "feat: add secure role-aware Flet application shell"
 - Produces all pages listed in design section 11.
 - Consumes the stable API client from Task 10 and never duplicates backend business validation.
 
-- [ ] **Step 1: Write the complete workflow test**
+- [x] **Step 1: Write the complete workflow test**
 
 ```python
 async def test_admin_can_import_schedule_publish_and_teacher_confirm(app_harness):
@@ -1381,35 +1381,35 @@ async def test_admin_can_import_schedule_publish_and_teacher_confirm(app_harness
     await app_harness.confirm_my_schedule(activity_id)
 ```
 
-- [ ] **Step 2: Run workflow tests and verify failure**
+- [x] **Step 2: Run workflow tests and verify failure**
 
 Run: `uv run pytest tests/client/test_workflows.py tests/e2e/test_admin_to_teacher_flow.py -q`
 
 Expected: FAIL because workflow views and harness actions are absent.
 
-- [ ] **Step 3: Implement reusable admin tables and form behavior**
+- [x] **Step 3: Implement reusable admin tables and form behavior**
 
 The table component must expose search, filters, deterministic sort, paging, loading, empty, error, and batch-selection states. Forms bind API field errors to controls. Dirty forms use Flet route pop confirmation so browser Back, system Back, and navigation clicks cannot silently discard edits.
 
-- [ ] **Step 4: Implement data, availability, import, and activity pages**
+- [x] **Step 4: Implement data, availability, import, and activity pages**
 
 Master data pages share table infrastructure but use explicit field schemas. Availability presents list and calendar views. Import shows template download, upload progress, create/update/unchanged counts, row/cell issues, and a separate confirmation action. The activity wizard has five validated steps: scope, panel rules, time slots, rooms, and solver parameters.
 
-- [ ] **Step 5: Implement scheduling, plan, approval, and audit pages**
+- [x] **Step 5: Implement scheduling, plan, approval, and audit pages**
 
 Scheduling polls persisted jobs with exponential intervals from 1 to 5 seconds and stops on terminal state. Plan detail shows groups, objective components, diagnostics, used exceptions, and candidate lists for manual adjustment. Version comparison shows student moves, teacher changes, resource changes, and score deltas. Approval prevents the requester from seeing an enabled approve action. Audit filters by actor, action, object, and time.
 
-- [ ] **Step 6: Implement teacher read-only portal**
+- [x] **Step 6: Implement teacher read-only portal**
 
 Show only published arrangements involving the logged-in teacher, including group, students, date, time, room, fellow panel members, exception marker, and confirmation state. The only write action is confirmation.
 
-- [ ] **Step 7: Pass client and end-to-end workflows**
+- [x] **Step 7: Pass client and end-to-end workflows**
 
 Run: `uv run pytest tests/client/test_workflows.py tests/e2e/test_admin_to_teacher_flow.py -q`
 
 Expected: all cases pass for system administrator, academic administrator, and teacher roles.
 
-- [ ] **Step 8: Run quality gates and commit**
+- [x] **Step 8: Run quality gates and commit**
 
 ```bash
 uv run ruff check .

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -123,12 +124,27 @@ async def audit_logs(
     session: Session,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    actor_id: UUID | None = None,
     action: str | None = None,
+    object_type: str | None = None,
+    object_id: UUID | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
     request_id: str | None = None,
 ) -> AuditPage:
     statement = select(AuditLog)
+    if actor_id:
+        statement = statement.where(AuditLog.actor_id == actor_id)
     if action:
         statement = statement.where(AuditLog.action == action)
+    if object_type:
+        statement = statement.where(AuditLog.object_type == object_type)
+    if object_id:
+        statement = statement.where(AuditLog.object_id == object_id)
+    if created_from:
+        statement = statement.where(AuditLog.created_at >= created_from)
+    if created_to:
+        statement = statement.where(AuditLog.created_at <= created_to)
     if request_id:
         statement = statement.where(AuditLog.request_id == request_id)
     total = int(
