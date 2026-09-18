@@ -1,0 +1,35 @@
+{
+  "activity_id": "fixture-no-chair",
+  "seed": 20260918,
+  "students": [
+    {"id": "s1", "advisor_id": "a1", "direction_ids": ["ai"], "available_slot_ids": ["slot-1", "slot-2"]},
+    {"id": "s2", "advisor_id": "a2", "direction_ids": ["systems"], "available_slot_ids": ["slot-1", "slot-2"]},
+    {"id": "s3", "advisor_id": "a3", "direction_ids": ["ai"], "available_slot_ids": ["slot-1", "slot-2"]},
+    {"id": "s4", "advisor_id": "a4", "direction_ids": ["systems"], "available_slot_ids": ["slot-1", "slot-2"]}
+  ],
+  "teachers": [
+    {"id": "t1", "title_rank": 3, "direction_ids": ["ai"], "available_slot_ids": ["slot-1", "slot-2"], "workload_limit": 2},
+    {"id": "t2", "title_rank": 3, "direction_ids": ["systems"], "available_slot_ids": ["slot-1", "slot-2"], "workload_limit": 2},
+    {"id": "t3", "title_rank": 3, "direction_ids": ["ai"], "available_slot_ids": ["slot-1", "slot-2"], "workload_limit": 2},
+    {"id": "t4", "title_rank": 3, "direction_ids": ["systems"], "available_slot_ids": ["slot-1", "slot-2"], "workload_limit": 2}
+  ],
+  "slots": [
+    {"id": "slot-1", "max_groups": 1, "sequence": 1},
+    {"id": "slot-2", "max_groups": 1, "sequence": 2}
+  ],
+  "rooms": [
+    {"id": "room-1", "capacity": 2, "available_slot_ids": ["slot-1", "slot-2"]},
+    {"id": "room-2", "capacity": 2, "available_slot_ids": ["slot-1", "slot-2"]}
+  ],
+  "rules": {
+    "students_per_group": 2,
+    "teachers_per_group": 2,
+    "chair_min_title_rank": 4,
+    "teacher_workload_limit": 2,
+    "balance_students_weight": 100,
+    "balance_teacher_load_weight": 50,
+    "direction_match_weight": 30,
+    "compact_schedule_weight": 20,
+    "exception_use_weight": 500
+  }
+}

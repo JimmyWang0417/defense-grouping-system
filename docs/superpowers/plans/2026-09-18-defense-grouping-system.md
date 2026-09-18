@@ -968,7 +968,7 @@ and whitespace validation now pass.
 - Produces: `solve(data: SchedulingInput, time_limit_seconds: float, on_progress: ProgressCallback | None = None) -> SolveOutcome`.
 - `SolveOutcome.status` is `feasible`, `optimal`, `infeasible`, or `timeout`; a successful outcome contains a validator-clean solution and objective components.
 
-- [ ] **Step 1: Write solver behavior tests**
+- [x] **Step 1: Write solver behavior tests**
 
 ```python
 def test_solver_returns_reproducible_valid_solution(feasible_input):
@@ -986,13 +986,13 @@ def test_solver_never_uses_unapproved_advisor_exception(feasible_input):
         assert advisors.isdisjoint(group.teacher_ids)
 ```
 
-- [ ] **Step 2: Run solver tests and verify failure**
+- [x] **Step 2: Run solver tests and verify failure**
 
 Run: `uv run pytest tests/unit/scheduling/test_solver.py -q`
 
 Expected: FAIL because `solve` is absent.
 
-- [ ] **Step 3: Implement CP-SAT decision variables and hard constraints**
+- [x] **Step 3: Implement CP-SAT decision variables and hard constraints**
 
 Create Boolean variables for student-to-group, teacher-to-group, group-to-slot, group-to-room, and chair-to-group. Use linear equalities for unique assignments and `AddImplication`/reified constraints for advisor, availability, room/slot, workload, and exception scopes. Derive the exact number of groups as `ceil(student_count / students_per_group)`.
 
@@ -1005,11 +1005,11 @@ solver.parameters.random_seed = data.seed
 solver.parameters.num_search_workers = 1
 ```
 
-- [ ] **Step 4: Add weighted objective components**
+- [x] **Step 4: Add weighted objective components**
 
 Represent each objective component with an integer penalty: maximum-minus-minimum student load, teacher load deviation from scaled mean, unmatched directions, non-consecutive teacher slot gaps, and used approved exceptions. Multiply by the exact rule weights and minimize the sum. Return both raw component values and weighted total.
 
-- [ ] **Step 5: Validate every returned solution and explain failure**
+- [x] **Step 5: Validate every returned solution and explain failure**
 
 Call the independent validator before returning success; raise an internal consistency error if it finds a violation. For infeasible inputs, combine precheck diagnostics with CP-SAT assumption literals for advisor, availability, panel, room, and capacity families, and map the infeasible assumption set to stable Chinese diagnostics.
 
@@ -1017,7 +1017,7 @@ Run: `uv run pytest tests/unit/scheduling/test_solver.py tests/unit/scheduling/t
 
 Expected: all cases pass, including fixtures and seed reproducibility.
 
-- [ ] **Step 6: Run quality gates and commit**
+- [x] **Step 6: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -1026,6 +1026,14 @@ uv run pytest tests/unit/scheduling -q
 git add src/defense_grouping/scheduling/solver.py tests/unit/scheduling/test_solver.py tests/fixtures/scheduling
 git commit -m "feat: generate explainable CP-SAT defense schedules"
 ```
+
+**Progress (2026-09-18):** Added a deterministic single-worker CP-SAT model for student,
+panel, chair, slot, room, workload, advisor, and exact availability-exception constraints;
+implemented all five weighted objective components, progress/final outcomes, bounded timeout,
+precheck short-circuiting, and a second pure-feasibility assumption-core pass for stable Chinese
+diagnostics. The initial solver test failed because the module was absent; 17 scheduling tests,
+all 24 unit tests, all 22 integration tests, Ruff, strict mypy, and whitespace validation now
+pass, including seed reproducibility and independent validation of every returned solution.
 
 ---
 
