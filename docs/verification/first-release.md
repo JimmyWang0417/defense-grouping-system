@@ -55,10 +55,11 @@ Web 启动页真实 smoke 截图（无头 Firefox 在首次画面捕获 Flet boo
 
 ## 远端检查点
 
-应用 ruleset 前的只读 dry-run 显示远端无同名规则，将创建
-`main-branch-protection`。配置脚本会在任何写入前查询成功的 `PR Gate` job；远端 workflow
-尚未出现时拒绝 apply。最终推送、run ID、ruleset ID 和 API 规范化回读结果记录在本次交付
-回执中。
+最终 workflow commit `cb8884154dcb7b9c58a70dfceb2f384025d4bc35` 的 CI run
+`35336511018` 全部成功。随后创建并启用 ruleset `23652785`，名称为
+`main-branch-protection`，目标为默认分支。第一次 API 回读发现 GitHub 为新版 Pull Request
+规则补入两个默认字段，因此后续修正通过该 ruleset 保护下的 Pull Request 提交；合并后再次
+运行 dry-run，结果应为 `unchanged`。
 
 自动发布流程本身已通过配置测试，但仓库 owner 仍需创建最小权限
 `RELEASE_PLEASE_TOKEN`（Contents 与 Pull requests 读写）。当前仓库 secret 名称列表为空；
