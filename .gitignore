@@ -12,6 +12,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+.runtime/
 
 # Local data and generated artifacts
 *.db
@@ -32,4 +33,3 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
-

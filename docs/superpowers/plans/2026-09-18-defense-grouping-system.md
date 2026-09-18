@@ -119,7 +119,7 @@
 - Produces: `Settings`, `get_settings() -> Settings`, `create_app(settings: Settings | None = None) -> FastAPI`, and the `defense-grouping` CLI.
 - Produces: API error envelope `{"error": {"code": str, "message": str, "request_id": str, "fields": dict[str, str]}}`.
 
-- [ ] **Step 1: Write the bootstrap tests**
+- [x] **Step 1: Write the bootstrap tests**
 
 ```python
 # tests/unit/test_app_boot.py
@@ -152,7 +152,13 @@ def test_unknown_route_uses_error_envelope(tmp_path):
     assert response.json()["error"]["request_id"]
 ```
 
-- [ ] **Step 2: Create the package metadata and lock dependencies**
+- [x] **Step 2: Create the package metadata and lock dependencies**
+
+> **2026-09-18 dependency note:** The locked FastAPI release resolves Starlette 1.6,
+> whose official test-client documentation now prefers `httpx2`; its deprecated
+> plain-`httpx` fallback hangs with the resolved AnyIO combination in this environment.
+> Add `httpx2>=2,<3` to the development group while retaining `httpx` for the
+> application API client. This changes only the test transport, not the public API.
 
 Use this project configuration, then run `uv lock`:
 
@@ -215,13 +221,13 @@ strict = true
 packages = ["defense_grouping"]
 ```
 
-- [ ] **Step 3: Run the bootstrap tests and confirm the expected import failure**
+- [x] **Step 3: Run the bootstrap tests and confirm the expected import failure**
 
 Run: `uv run pytest tests/unit/test_app_boot.py -q`
 
 Expected: FAIL because `defense_grouping.api.main` does not exist.
 
-- [ ] **Step 4: Implement settings, request IDs, errors, and the app factory**
+- [x] **Step 4: Implement settings, request IDs, errors, and the app factory**
 
 ```python
 # src/defense_grouping/config.py
@@ -289,18 +295,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 Implement `scripts/dev.py` so it generates `.runtime/local.env` with a cryptographically random secret when absent, exports those values to its child-process environment, starts Uvicorn with `defense_grouping.api.main:create_app --factory` on port 8765, waits for `/api/v1/health`, and then runs the Flet entry point. Terminating the script must terminate both child processes.
 
-- [ ] **Step 5: Run quality gates**
+- [x] **Step 5: Run quality gates**
 
 Run: `uv run pytest tests/unit/test_app_boot.py -q && uv run ruff check . && uv run mypy src`
 
 Expected: all commands pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add pyproject.toml uv.lock .env.example README.md scripts src tests/unit/test_app_boot.py
 git commit -m "build: bootstrap Flet and FastAPI project"
 ```
+
+**Progress (2026-09-18):** Added the locked Python project, settings and API factory,
+stable request/error envelopes, CLI, supervised local launcher, ignore rules, and bootstrap
+tests. The test was first observed failing with `ModuleNotFoundError`; after implementation,
+`pytest` reports 3 passed, Ruff reports all checks passed, and strict mypy reports no issues.
 
 ---
 
