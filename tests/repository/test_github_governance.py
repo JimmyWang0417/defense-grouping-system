@@ -42,6 +42,8 @@ def test_main_ruleset_requires_stable_pr_gate_for_solo_owner() -> None:
     }
     assert pull_request["required_approving_review_count"] == 0
     assert pull_request["required_review_thread_resolution"] is True
+    assert pull_request["require_extra_approval_for_unattributed_changes"] is False
+    assert pull_request["required_reviewers"] == []
     assert set(pull_request["allowed_merge_methods"]) == {"squash", "rebase"}
     assert checks["strict_required_status_checks_policy"] is True
     assert checks["required_status_checks"] == [{"context": "PR Gate"}]
@@ -118,6 +120,28 @@ def test_pull_request_template_requires_validation_and_conventional_title() -> N
     assert "uv run pytest" in template
     assert "migration" in template.casefold()
     assert "security" in template.casefold()
+
+
+def test_plain_language_wiki_covers_the_complete_user_journey() -> None:
+    wiki = ROOT / "docs" / "wiki"
+    expected = {
+        "Home.md",
+        "_Sidebar.md",
+        "名词说明.md",
+        "安装与首次登录.md",
+        "角色与权限.md",
+        "数据准备与导入.md",
+        "活动排组与发布.md",
+        "例外审批、审计与导出.md",
+        "常见问题.md",
+    }
+    assert expected <= {path.name for path in wiki.glob("*.md")}
+    combined = "\n".join((wiki / name).read_text(encoding="utf-8") for name in expected)
+    for required in ("首次登录", "Excel", "排组", "发布", "例外", "备份", "PR Gate"):
+        assert required in combined
+    for empty_phrase in ("TODO", "TBD", "赋能", "抓手", "方法论"):
+        assert empty_phrase not in combined
+    assert all((wiki / name).stat().st_size >= 100 for name in expected)
 
 
 class FakeRunner:

@@ -14,6 +14,7 @@
 - [PostgreSQL 服务器迁移](docs/operations/server-migration.md)
 - [备份与恢复](docs/operations/backup-recovery.md)
 - [PR 规则与自动发布](docs/operations/repository-governance.md)
+- [完整中文使用手册与 Wiki 源文件](docs/wiki/Home.md)
 
 ## 仓库关系
 
