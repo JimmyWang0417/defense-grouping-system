@@ -865,7 +865,7 @@ pass, including injected rollback and audit evidence, while Ruff and strict mypy
 - Produces: `run_prechecks(data: SchedulingInput) -> tuple[Diagnostic, ...]`.
 - Produces: `validate_solution(data, solution) -> ValidationReport` independent from solver code.
 
-- [ ] **Step 1: Write hard-constraint validator tests**
+- [x] **Step 1: Write hard-constraint validator tests**
 
 ```python
 def test_validator_rejects_student_with_advisor_on_panel(simple_input, solution_factory):
@@ -882,13 +882,13 @@ def test_precheck_reports_insufficient_chairs(simple_input):
     assert diagnostics[0].details == {"required": 3, "available": 2}
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Run: `uv run pytest tests/unit/scheduling -q`
 
 Expected: FAIL because scheduling domain modules are absent.
 
-- [ ] **Step 3: Implement immutable process boundary types**
+- [x] **Step 3: Implement immutable process boundary types**
 
 ```python
 from dataclasses import dataclass
@@ -925,11 +925,11 @@ class SchedulingInput:
 
 Define `GroupSolution`, `ScheduleSolution`, `Violation`, `ValidationReport`, and `Diagnostic` in the same module. No SQLAlchemy or FastAPI import is allowed in `scheduling/domain.py`.
 
-- [ ] **Step 4: Implement deterministic prechecks and validator**
+- [x] **Step 4: Implement deterministic prechecks and validator**
 
 Prechecks must cover zero participants, capacity lower bound, number of chair candidates, panel supply, student with no candidate slot, teacher with no candidate slot, and direction with no eligible non-advisor teacher. The validator must check every hard constraint from design section 8.1 and emit stable codes with affected IDs.
 
-- [ ] **Step 5: Add property tests**
+- [x] **Step 5: Add property tests**
 
 Use Hypothesis to generate small assignment sets and verify that duplicate student assignment, duplicate room/slot use, teacher double-booking, capacity overflow, and unscoped exceptions are always detected.
 
@@ -937,7 +937,7 @@ Run: `uv run pytest tests/unit/scheduling -q`
 
 Expected: all deterministic and property tests pass.
 
-- [ ] **Step 6: Run quality gates and commit**
+- [x] **Step 6: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -946,6 +946,13 @@ uv run pytest tests/unit/scheduling -q
 git add src/defense_grouping/scheduling tests/unit/scheduling
 git commit -m "feat: add scheduling contracts and independent validation"
 ```
+
+**Progress (2026-09-18):** Added deeply immutable, pickle-serializable scheduling input
+and solution contracts, deterministic capacity/chair/panel/availability/direction prechecks,
+and a solver-independent validator for every hard-constraint family and exact approved
+exception scope. The initial scheduling test run failed because the package was absent; nine
+completed scheduling tests, all 16 unit tests, all 22 integration tests, Ruff, strict mypy,
+and whitespace validation now pass.
 
 ---
 
