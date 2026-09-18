@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8765, ge=1, le=65535)
     display_timezone: str = "Asia/Shanghai"
+    storage_dir: Path = Path("./data/storage")
 
 
 @lru_cache

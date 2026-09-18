@@ -5,6 +5,7 @@ from uuid import UUID
 
 import httpx2
 import pytest_asyncio
+from fastapi import FastAPI
 
 from defense_grouping.api.main import create_app
 from defense_grouping.auth.security import hash_password
@@ -20,6 +21,7 @@ INTEGRATION_PASSWORD = "Admin Password 2026"
 @dataclass(frozen=True)
 class MasterHarness:
     client: httpx2.AsyncClient
+    app: FastAPI
     database: Database
     department_id: UUID
     other_department_id: UUID
@@ -43,6 +45,7 @@ async def master_harness(tmp_path: Path) -> AsyncIterator[MasterHarness]:
         environment="test",
         database_url=f"sqlite+aiosqlite:///{tmp_path / 'master.db'}",
         jwt_secret="test-secret-with-at-least-32-characters",
+        storage_dir=tmp_path / "storage",
     )
     database = Database(settings.database_url)
     async with database.engine.begin() as connection:
@@ -94,6 +97,7 @@ async def master_harness(tmp_path: Path) -> AsyncIterator[MasterHarness]:
     async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield MasterHarness(
             client=client,
+            app=app,
             database=database,
             department_id=department.id,
             other_department_id=other_department.id,

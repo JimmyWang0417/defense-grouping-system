@@ -754,7 +754,7 @@ integration suite reports 22 passed, with Ruff and strict mypy also passing.
 - Produces: `preflight(kind, workbook, principal) -> ImportPreview` and `confirm(batch_id, principal) -> ImportResult`.
 - Produces API: template download, upload/preflight, preview retrieval, and confirm.
 
-- [ ] **Step 1: Write preflight and rollback tests**
+- [x] **Step 1: Write preflight and rollback tests**
 
 ```python
 def test_student_preflight_reports_exact_cell(admin_client, student_workbook_with_bad_advisor):
@@ -779,13 +779,13 @@ def test_confirm_rolls_back_every_row_when_write_fails(admin_client, valid_previ
     assert count_students() == before
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Run: `uv run pytest tests/integration/test_imports.py -q`
 
 Expected: FAIL with missing import routes.
 
-- [ ] **Step 3: Implement stable preview contracts**
+- [x] **Step 3: Implement stable preview contracts**
 
 ```python
 from dataclasses import dataclass
@@ -819,13 +819,13 @@ class ImportPreview:
 
 The upload endpoint returns HTTP 202 with an `ImportBatch` ID. Parse and preflight in a bounded thread executor, persist progress and terminal status, and let the client poll `GET /api/v1/imports/{id}`. The uploaded file is saved under `uploads/imports/<batch-uuid>.xlsx`; database records store SHA-256, original name, size, uploader, template kind, and preview JSON. Reject macro-enabled files, files over 20 MiB, wrong sheet names, unknown columns, formulas in identity fields, and more than 20,000 data rows.
 
-- [ ] **Step 4: Implement six templates and idempotent upserts**
+- [x] **Step 4: Implement six templates and idempotent upserts**
 
 Generate workbooks from code with locked header names documented in design section 7. Student and teacher imports key by business number; course and leave imports key by a normalized source fingerprint; slots key by activity/date/start/end; rooms key by campus/building/name.
 
 For week-based course rows, require academic term code, teaching week number, weekday, and section interval, then expand to exact datetimes using `AcademicTerm.start_date` and the configured section timetable.
 
-- [ ] **Step 5: Verify preflight, transaction, and idempotency**
+- [x] **Step 5: Verify preflight, transaction, and idempotency**
 
 Add tests for every template, duplicate rows, repeated file import, file hash mismatch between preview and confirm, wrong department, and a successful import audit record.
 
@@ -833,7 +833,7 @@ Run: `uv run pytest tests/integration/test_imports.py -q`
 
 Expected: all cases pass.
 
-- [ ] **Step 6: Run quality gates and commit**
+- [x] **Step 6: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
@@ -842,6 +842,12 @@ uv run pytest tests/integration/test_imports.py -q
 git add src/defense_grouping/imports_exports tests/fixtures/imports tests/integration/test_imports.py
 git commit -m "feat: add transactional Excel import workflow"
 ```
+
+**Progress (2026-09-18):** Added six generated workbooks with locked headers and examples,
+20 MiB/20,000-row and formula safeguards, a bounded-thread persistent preflight job, precise
+cell issues, file-hash verification, and one-transaction idempotent confirmation for every
+kind. Five initial tests were observed failing with missing routes; seven completed tests now
+pass, including injected rollback and audit evidence, while Ruff and strict mypy pass.
 
 ---
 
