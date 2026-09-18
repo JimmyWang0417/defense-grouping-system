@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -109,8 +110,24 @@ def test_release_requires_ci_and_only_publishes_github_assets() -> None:
 
     config = json.loads((ROOT / "release-please-config.json").read_text())
     manifest = json.loads((ROOT / ".release-please-manifest.json").read_text())
-    assert config["packages"]["."]["release-type"] == "python"
-    assert manifest == {".": "0.1.0"}
+    package = config["packages"]["."]
+    assert package["release-type"] == "python"
+    assert package["extra-files"] == [
+        {
+            "type": "toml",
+            "path": "uv.lock",
+            "jsonpath": "$.package[?(@.name.value=='defense-grouping-system')].version",
+        }
+    ]
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
+    version = project["project"]["version"]
+    locked_project = next(
+        item for item in lock["package"] if item["name"] == "defense-grouping-system"
+    )
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version)
+    assert manifest == {".": version}
+    assert locked_project["version"] == version
 
 
 def test_pull_request_template_requires_validation_and_conventional_title() -> None:
