@@ -1249,7 +1249,7 @@ git commit -m "feat: add approvals auditing exports and recovery"
 - Produces: `ApiClient`, `SessionState`, declarative Flet router, role-aware navigation, login, first-password-change, and dashboard views.
 - Consumes only `/api/v1`; no client module imports `defense_grouping.models` or `defense_grouping.db`.
 
-- [ ] **Step 1: Write client boundary and role-navigation tests**
+- [x] **Step 1: Write client boundary and role-navigation tests**
 
 ```python
 def test_client_package_does_not_import_database_modules():
@@ -1265,13 +1265,13 @@ def test_teacher_navigation_is_read_only():
     assert [item.route for item in items] == ["/dashboard", "/my-schedule"]
 ```
 
-- [ ] **Step 2: Run client tests and verify failure**
+- [x] **Step 2: Run client tests and verify failure**
 
 Run: `uv run pytest tests/client/test_api_client.py tests/client/test_role_navigation.py -q`
 
 Expected: FAIL because client modules are absent.
 
-- [ ] **Step 3: Implement async API client and session refresh**
+- [x] **Step 3: Implement async API client and session refresh**
 
 ```python
 from typing import Any
@@ -1304,13 +1304,13 @@ class ApiClient:
 
 Retry once after a 401 only when a refresh token is present and refresh succeeds. Keep access tokens in memory. Use OS keyring for desktop refresh tokens and server-side Flet session storage for Web; clearing either store logs the user out.
 
-- [ ] **Step 4: Implement Flet declarative router and shell**
+- [x] **Step 4: Implement Flet declarative router and shell**
 
 Use Flet 1.x `ft.Router`, nested routes, and one route table derived from `SessionState`. Rebuild authorized routes after login. Unknown routes show a Chinese 404 view; unauthenticated routes redirect to `/login`; forbidden routes show a 403 view without briefly rendering protected data.
 
 The shell includes left navigation, current activity selector, task indicator, account menu, responsive breakpoint, and a content outlet. The root `main.py` is a combined desktop launcher: when `DEFENSE_API_URL` is absent and local health is unavailable, it starts the packaged FastAPI sidecar, waits for health, then launches Flet. Web deployment requires an explicit API URL and never starts a per-session sidecar.
 
-- [ ] **Step 5: Pass login, refresh, and navigation tests**
+- [x] **Step 5: Pass login, refresh, and navigation tests**
 
 Test successful login, first password change, refresh-once behavior, logout clearing stores, teacher navigation, academic-admin navigation, system-admin navigation, API field errors, network timeout, and request-ID display.
 
@@ -1318,7 +1318,7 @@ Run: `uv run pytest tests/client/test_api_client.py tests/client/test_role_navig
 
 Expected: all cases pass.
 
-- [ ] **Step 6: Run desktop and Web smoke commands**
+- [x] **Step 6: Run desktop and Web smoke commands**
 
 Run:
 
@@ -1329,7 +1329,7 @@ uv run flet run --web main.py
 
 Expected: both modes display the login page and can reach the local health endpoint.
 
-- [ ] **Step 7: Run quality gates and commit**
+- [x] **Step 7: Run quality gates and commit**
 
 ```bash
 uv run ruff check .
