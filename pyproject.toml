@@ -29,8 +29,27 @@ python = ">=3.12,<3.15"
 flet = ">=1,<2"
 httpx = ">=0.28,<1"
 
+[tool.flet]
+product = "答辩分组系统"
+artifact = "defense-grouping-system"
+org = "io.github.jimmywang0417"
+bundle_id = "io.github.jimmywang0417.defense_grouping_system"
+company = "JimmyWang0417"
+copyright = "Copyright © 2026 JimmyWang0417"
+
+[tool.flet.app]
+path = "src"
+module = "main.py"
+
+[tool.flet.web]
+route_url_strategy = "path"
+pwa_background_color = "#F7F8FC"
+pwa_theme_color = "#1F5AA6"
+
 [dependency-groups]
 dev = [
+  "flet-cli==1.0.0",
+  "flet-web==1.0.0",
   "hypothesis>=6.138,<7",
   "httpx2>=2,<3",
   "mypy>=1.17,<2",

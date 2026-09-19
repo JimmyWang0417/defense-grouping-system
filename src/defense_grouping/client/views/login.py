@@ -39,17 +39,25 @@ def login_view(
         username.error = None
         password.error = None
         feedback.controls.clear()
+        submitted_username = username.value.strip() if isinstance(username.value, str) else ""
+        submitted_password = password.value if isinstance(password.value, str) else ""
+        if not submitted_username:
+            username.error = "请输入用户名"
+        if not submitted_password:
+            password.error = "请输入密码"
+        if username.error is not None or password.error is not None:
+            page.update(username, password, feedback)
+            return
         try:
-            authenticated = await client.login(username.value, password.value)
+            authenticated = await client.login(submitted_username, submitted_password)
         except ApiError as error:
             username.error = error.fields.get("username")
             password.error = error.fields.get("password")
             feedback.controls.append(error_banner(error))
-            rerender()
+            page.update(username, password, feedback)
             return
         replace_session(session, authenticated)
         destination = "/change-password" if session.must_change_password else "/dashboard"
-        rerender()
         page.navigate(destination)
 
     password.on_submit = submit
@@ -96,21 +104,25 @@ def change_password_view(
     async def submit() -> None:
         feedback.controls.clear()
         confirmation.error = None
-        if new_password.value != confirmation.value:
+        submitted_current = (
+            current_password.value if isinstance(current_password.value, str) else ""
+        )
+        submitted_new = new_password.value if isinstance(new_password.value, str) else ""
+        submitted_confirmation = confirmation.value if isinstance(confirmation.value, str) else ""
+        if submitted_new != submitted_confirmation:
             confirmation.error = "两次输入的新密码不一致"
-            rerender()
+            page.update(current_password, new_password, confirmation, feedback)
             return
         try:
             authenticated = await client.change_password(
-                current_password.value,
-                new_password.value,
+                submitted_current,
+                submitted_new,
             )
         except ApiError as error:
             feedback.controls.append(error_banner(error))
-            rerender()
+            page.update(current_password, new_password, confirmation, feedback)
             return
         replace_session(session, authenticated)
-        rerender()
         page.navigate("/dashboard")
 
     return ft.Container(

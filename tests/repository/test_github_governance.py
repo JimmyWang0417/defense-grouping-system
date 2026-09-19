@@ -154,7 +154,16 @@ def test_plain_language_wiki_covers_the_complete_user_journey() -> None:
     }
     assert expected <= {path.name for path in wiki.glob("*.md")}
     combined = "\n".join((wiki / name).read_text(encoding="utf-8") for name in expected)
-    for required in ("首次登录", "Excel", "排组", "发布", "例外", "备份", "PR Gate"):
+    for required in (
+        "首次登录",
+        "保持登录",
+        "Excel",
+        "排组",
+        "发布",
+        "例外",
+        "备份",
+        "PR Gate",
+    ):
         assert required in combined
     for empty_phrase in ("TODO", "TBD", "赋能", "抓手", "方法论"):
         assert empty_phrase not in combined
