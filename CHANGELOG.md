@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/JimmyWang0417/defense-grouping-system/compare/defense-grouping-system-v0.2.0...defense-grouping-system-v0.3.0) (2026-09-19)
+
+
+### Features
+
+* complete usable Flet workflows ([#4](https://github.com/JimmyWang0417/defense-grouping-system/issues/4)) ([6aa3bb2](https://github.com/JimmyWang0417/defense-grouping-system/commit/6aa3bb220173255086275f3afc305312a0a3f7d0))
+
 ## [0.2.0](https://github.com/JimmyWang0417/defense-grouping-system/compare/defense-grouping-system-v0.1.0...defense-grouping-system-v0.2.0) (2026-09-18)
 
 
