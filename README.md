@@ -4,40 +4,23 @@
 
 项目采用 Flet 多平台客户端、FastAPI 后端、SQLAlchemy 数据访问层和 OR-Tools CP-SAT 求解器。本机模式使用 SQLite，服务器模式可迁移到 PostgreSQL。
 
-首版本机实现、院系级性能验收和仓库治理已完成：
+项目文档：
 
-- [系统设计规格](docs/superpowers/specs/2026-09-18-defense-grouping-system-design.md)
-- [实施计划](docs/superpowers/plans/2026-09-18-defense-grouping-system.md)
-- [可直接使用的 `/goal` 提示词](GOAL_PROMPT.md)
 - [本地开发](docs/operations/local-development.md)
 - [桌面与 Web 打包](docs/operations/desktop-packaging.md)
 - [PostgreSQL 服务器迁移](docs/operations/server-migration.md)
 - [备份与恢复](docs/operations/backup-recovery.md)
+- [登录状态如何保存](docs/operations/login-session.md)
 - [PR 规则与自动发布](docs/operations/repository-governance.md)
 - [完整中文使用手册与 Wiki 源文件](docs/wiki/Home.md)
 
-## 仓库关系
-
-本项目是独立仓库，并以 Git submodule 形式挂载到 Classwork：
-
-```text
-Courses/软件系统分析与设计/答辩分组软件
-```
-
-克隆 Classwork 后初始化项目：
-
-```bash
-git submodule update --init --recursive
-```
-
 ## 当前状态
 
-- [x] 完成需求分析与系统设计
-- [x] 完成实施计划
-- [x] 完成 `/goal` 实施提示词
 - [x] 建立项目依赖、API 启动骨架与质量门禁
 - [x] 完成首版本机实现
 - [x] 完成院系级性能验收（500 学生、50 教师、20 组）
+- [x] 完成基础数据、导入、活动、排组、方案、审批、教师安排、审计与系统管理界面
+- [x] Web 刷新或重新打开后恢复登录，桌面端使用系统密钥环保存登录状态
 - [x] 配置 PR Gate、默认分支 ruleset 与 GitHub Release 自动化
 
 ## 开发环境

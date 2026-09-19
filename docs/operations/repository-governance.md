@@ -15,6 +15,20 @@ PR 标题必须遵循 Conventional Commits，例如 `fix(api): reject expired ex
 Python 3.12、3.13、3.14 验证测试，并检查格式、Ruff、mypy、PostgreSQL、Flet Web build
 与治理契约；夜间工作流另跑 500 学生规模性能测试。
 
+一次 PR 会看到以下检查：
+
+| 检查 | 实际内容 | 失败后怎么做 |
+| --- | --- | --- |
+| PR title | 标题是否符合发布工具能够识别的格式 | 修改 PR 标题，不需要补空提交 |
+| Static analysis | 格式、Ruff、mypy 和仓库配置测试 | 在本机执行输出中的同一条命令并修复 |
+| Python 3.12/3.13/3.14 tests | 单元、接口和客户端测试 | 查看失败版本与测试名，不要只重跑掩盖问题 |
+| PostgreSQL compatibility | PostgreSQL 建表和关键数据流程 | 检查迁移是否同时兼容 SQLite 和 PostgreSQL |
+| Flet web build | Web 产物能否从锁定依赖构建 | 检查依赖、入口和 Flet 打包配置 |
+| PR Gate | 汇总前面所有结果 | 只有前面全部成功时才成功 |
+
+`PR Gate` 是 ruleset 唯一要求的状态名称，其他检查由它统一汇总。这样可以调整测试矩阵，
+而不必每次修改远端 ruleset。合并前分支必须包含最新 main；旧结果不能代替更新后的检查。
+
 ## 首次启用 ruleset
 
 先把 workflow commit 推送到 GitHub，等待该 commit 的第一次 `PR Gate` 成功。脚本默认仅
@@ -49,7 +63,15 @@ gh api repos/JimmyWang0417/defense-grouping-system/actions/runs \
 
 ## 自动发布
 
-在仓库 Actions secrets 中创建 `RELEASE_PLEASE_TOKEN`。推荐 fine-grained PAT，只授权该仓库：
+在仓库 Actions secrets 中创建 `RELEASE_PLEASE_TOKEN`。网页位置是：
+
+1. 打开仓库的 **Settings**。
+2. 在左侧展开 **Secrets and variables**，点击 **Actions**。不是上方的“Actions”工作流设置。
+3. 在 **Repository secrets** 区域点击 **New repository secret**。
+4. Name 填 `RELEASE_PLEASE_TOKEN`，Secret 填 fine-grained PAT 的原文，然后点击 **Add secret**。
+
+保存后 GitHub 只显示 secret 的名称和更新时间，不能重新显示原文。需要更换时点击同名 secret
+并更新，不要再创建拼写不同的名称。推荐 fine-grained PAT 只授权该仓库：
 
 - Contents: Read and write
 - Pull requests: Read and write
@@ -59,11 +81,21 @@ GitHub secret，不写入日志、`.env` 或仓库。
 
 合并到 main 后，Release workflow 先等待同一 commit 的 `PR Gate`，再由 release-please 根据
 Conventional Commits 创建或更新发布 PR。发布 PR 通过门禁并合并后，workflow 创建 GitHub
-Release，执行 `uv build`，上传 wheel 与 source archive。流程不发布 PyPI、不部署服务，
-也不自动增加许可证。
+Release。流程构建并上传 Python wheel 和源码包，不发布 PyPI，也不部署服务。
 
 发布故障时保留 tag/Release 证据，修复后重跑失败 job；不要复用或泄露 token。定期轮换
 PAT，并在 owner 离开项目或权限变化时立即吊销。
+
+当前远端仓库已经存在这个 secret。2026-09-18 的 Release run `35342190834` 已使用它创建
+`defense-grouping-system-v0.2.0`，并上传 wheel 与 source archive。GitHub API 只能回读 secret
+名称，无法读取它的值。
+
+## 当前远端规则
+
+GitHub ruleset ID 为 `23652785`，名称为 `main-branch-protection`，状态为 `active`。远端回读
+确认没有 bypass actor，owner 也不能直接绕过。规则要求通过 PR、解决审查对话、更新到最新
+main、通过 `PR Gate`，且禁止删除默认分支和强推。单 owner 仓库的批准人数是 0，避免要求
+owner 自己批准自己的 PR；这不影响测试和对话解决要求。
 
 ## 发布 GitHub Wiki
 

@@ -22,6 +22,14 @@ class SessionStore(Protocol):
     def remove(self, key: str) -> None: ...
 
 
+class SharedPreferencesStore(Protocol):
+    async def get(self, key: str) -> str | int | float | bool | list[str] | None: ...
+
+    async def set(self, key: str, value: str) -> bool: ...
+
+    async def remove(self, key: str) -> bool: ...
+
+
 class MemoryRefreshTokenStore:
     """In-memory store for tests and explicitly ephemeral sessions."""
 
@@ -86,7 +94,57 @@ class FletSessionTokenStore:
         self._store.set(self.KEY, token)
 
     def clear(self) -> None:
-        self._store.remove(self.KEY)
+        try:
+            self._store.remove(self.KEY)
+        except KeyError:
+            pass
+
+
+class BrowserRefreshTokenStore:
+    """Persist only the rotating refresh token in this browser profile."""
+
+    KEY = "defense_grouping.refresh_token"
+
+    def __init__(
+        self,
+        preferences: SharedPreferencesStore,
+        token: str | None,
+    ) -> None:
+        self._preferences = preferences
+        self._token = token
+        self._dirty = False
+
+    @classmethod
+    async def create(cls, preferences: SharedPreferencesStore) -> BrowserRefreshTokenStore:
+        store = cls(preferences, None)
+        await store.load()
+        return store
+
+    async def load(self) -> None:
+        stored = await self._preferences.get(self.KEY)
+        self._token = stored if isinstance(stored, str) else None
+        self._dirty = False
+
+    def get(self) -> str | None:
+        return self._token
+
+    def set(self, token: str) -> None:
+        self._token = token
+        self._dirty = True
+
+    def clear(self) -> None:
+        self._token = None
+        self._dirty = True
+
+    async def flush(self) -> None:
+        if not self._dirty:
+            return
+        token = self._token
+        if token is None:
+            await self._preferences.remove(self.KEY)
+        else:
+            await self._preferences.set(self.KEY, token)
+        self._dirty = False
 
 
 @dataclass

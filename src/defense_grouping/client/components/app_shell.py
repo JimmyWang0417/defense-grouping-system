@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 
 import flet as ft
 
+from defense_grouping.client.components.view_state import ActivityContext
 from defense_grouping.client.router import navigation_for
 from defense_grouping.client.session import SessionState
 
@@ -16,6 +17,7 @@ def app_shell(
     content: ft.Control,
     *,
     on_logout: LogoutHandler,
+    activity_context: ActivityContext | None = None,
     task_running: bool = False,
 ) -> ft.Control:
     def navigation_handler(route: str) -> Callable[[], Awaitable[None]]:
@@ -33,6 +35,7 @@ def app_shell(
                     icon=item.icon,
                     on_click=navigation_handler(item.route),
                     width=210,
+                    key=f"nav.{item.route.removeprefix('/')}",
                 )
                 for item in navigation_for(session.roles)
             ],
@@ -56,14 +59,28 @@ def app_shell(
             ft.PopupMenuItem(content="退出登录", icon=ft.Icons.LOGOUT, on_click=on_logout),
         ],
     )
+    activity_dropdown = ft.Dropdown(
+        label="当前活动",
+        hint_text="暂无活动" if activity_context and activity_context.loaded else "正在读取活动",
+        width=280,
+        value=session.selected_activity_id,
+        options=[
+            ft.DropdownOption(key=option.id, text=option.name)
+            for option in (activity_context.options if activity_context else [])
+        ],
+        disabled=activity_context is None or not activity_context.options,
+        key="shell.activity",
+    )
+
+    def select_activity() -> None:
+        if activity_context is not None:
+            activity_context.select(activity_dropdown.value)
+            page.update(activity_dropdown)
+
+    activity_dropdown.on_select = select_activity
     header = ft.Row(
         controls=[
-            ft.Dropdown(
-                label="当前活动",
-                hint_text="未选择活动",
-                width=280,
-                disabled=True,
-            ),
+            activity_dropdown,
             task_indicator,
             account_menu,
         ],
@@ -84,4 +101,5 @@ def app_shell(
             ),
         ],
         expand=True,
+        key="app.shell",
     )

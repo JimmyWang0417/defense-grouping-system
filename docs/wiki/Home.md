@@ -18,6 +18,7 @@
 - [桌面与 Web 打包](https://github.com/JimmyWang0417/defense-grouping-system/blob/main/docs/operations/desktop-packaging.md)
 - [PostgreSQL 服务器迁移](https://github.com/JimmyWang0417/defense-grouping-system/blob/main/docs/operations/server-migration.md)
 - [备份与恢复](https://github.com/JimmyWang0417/defense-grouping-system/blob/main/docs/operations/backup-recovery.md)
+- [登录状态如何保存](https://github.com/JimmyWang0417/defense-grouping-system/blob/main/docs/operations/login-session.md)
 - [仓库规则与自动发布](https://github.com/JimmyWang0417/defense-grouping-system/blob/main/docs/operations/repository-governance.md)
 
 ## 一次完整业务流程

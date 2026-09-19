@@ -52,6 +52,7 @@ class ApiClient:
         self._access_token = token
 
     async def close(self) -> None:
+        await self._flush_token_store()
         await self._client.aclose()
 
     def clear_tokens(self) -> None:
@@ -125,6 +126,7 @@ class ApiClient:
         device_info: str | None = None,
     ) -> SessionState:
         self.clear_tokens()
+        await self._flush_token_store()
         response = await self._send(
             "POST",
             "/api/v1/auth/login",
@@ -132,6 +134,7 @@ class ApiClient:
         )
         self._raise_for_error(response)
         self._apply_token_pair(self._json_object(response))
+        await self._flush_token_store()
         try:
             return await self.current_user()
         except Exception:
@@ -173,6 +176,7 @@ class ApiClient:
             },
         )
         self._apply_token_pair(response)
+        await self._flush_token_store()
         return await self.current_user()
 
     async def logout(self) -> None:
@@ -187,6 +191,7 @@ class ApiClient:
                 self._raise_for_error(response)
         finally:
             self.clear_tokens()
+            await self._flush_token_store()
 
     async def _refresh(self) -> bool:
         refresh_token = self._token_store.get()
@@ -201,8 +206,10 @@ class ApiClient:
             )
             self._raise_for_error(response)
             self._apply_token_pair(self._json_object(response))
+            await self._flush_token_store()
         except ApiError:
             self.clear_tokens()
+            await self._flush_token_store()
             return False
         return True
 
@@ -237,6 +244,11 @@ class ApiClient:
             )
         self._access_token = access_token
         self._token_store.set(refresh_token)
+
+    async def _flush_token_store(self) -> None:
+        flush = getattr(self._token_store, "flush", None)
+        if flush is not None:
+            await flush()
 
     @staticmethod
     def _validate_path(path: str) -> None:

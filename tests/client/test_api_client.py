@@ -6,7 +6,7 @@ import pytest
 
 from defense_grouping.client.api_client import ApiClient, ApiError
 from defense_grouping.client.components.feedback import format_api_error
-from defense_grouping.client.session import MemoryRefreshTokenStore
+from defense_grouping.client.session import BrowserRefreshTokenStore, MemoryRefreshTokenStore
 
 
 def json_response(status_code: int, payload: dict[str, Any]) -> httpx.Response:
@@ -42,6 +42,36 @@ def user_payload(*, must_change_password: bool = False) -> dict[str, Any]:
         "department_ids": ["22222222-2222-2222-2222-222222222222"],
         "must_change_password": must_change_password,
     }
+
+
+@pytest.mark.asyncio
+async def test_browser_refresh_token_survives_new_page_session_until_logout() -> None:
+    class Preferences:
+        def __init__(self) -> None:
+            self.values: dict[str, str] = {}
+
+        async def get(self, key: str) -> str | None:
+            return self.values.get(key)
+
+        async def set(self, key: str, value: str) -> bool:
+            self.values[key] = value
+            return True
+
+        async def remove(self, key: str) -> bool:
+            return self.values.pop(key, None) is not None
+
+    preferences = Preferences()
+    first_page = await BrowserRefreshTokenStore.create(preferences)
+    first_page.set("persistent-refresh-token")
+    await first_page.flush()
+
+    refreshed_page = await BrowserRefreshTokenStore.create(preferences)
+    assert refreshed_page.get() == "persistent-refresh-token"
+
+    refreshed_page.clear()
+    await refreshed_page.flush()
+    after_logout = await BrowserRefreshTokenStore.create(preferences)
+    assert after_logout.get() is None
 
 
 @pytest.mark.asyncio

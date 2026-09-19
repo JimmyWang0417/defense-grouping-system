@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./data/defense_grouping.db"
     jwt_secret: str = Field(min_length=32)
     access_token_minutes: int = Field(default=15, ge=1)
-    refresh_token_days: int = Field(default=7, ge=1)
+    refresh_token_days: int = Field(default=30, ge=1)
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8765, ge=1, le=65535)
     display_timezone: str = "Asia/Shanghai"
