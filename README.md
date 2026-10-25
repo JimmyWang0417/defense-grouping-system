@@ -6,6 +6,7 @@
 
 项目文档：
 
+- [技术报告](docs/technical-report.md)
 - [本地开发](docs/operations/local-development.md)
 - [桌面与 Web 打包](docs/operations/desktop-packaging.md)
 - [PostgreSQL 服务器迁移](docs/operations/server-migration.md)
